@@ -14,6 +14,7 @@ shared/dist/
 *.sqlite-shm
 radar.sqlite*
 server/radar.sqlite*
+backup*.json
 
 # Arquivos de ambiente e segredos
 .env
