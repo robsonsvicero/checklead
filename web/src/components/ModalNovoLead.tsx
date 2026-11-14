@@ -76,9 +76,9 @@ export const ModalNovoLead: React.FC<ModalNovoLeadProps> = ({ aberto, onFechar, 
 
   return (
     <div className="modal-overlay" onClick={onFechar}>
-      <div className="modal-content" onClick={e => e.stopPropagation()}>
+      <div className="modal-content" role="dialog" aria-modal="true" aria-labelledby="novo-lead-titulo" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h2 className="modal-title">⚡ Novo Lead Rápido</h2>
+          <h2 className="modal-title" id="novo-lead-titulo">⚡ Novo Lead Rápido</h2>
           <button className="btn-close" onClick={onFechar}>&times;</button>
         </div>
 
@@ -91,16 +91,17 @@ export const ModalNovoLead: React.FC<ModalNovoLeadProps> = ({ aberto, onFechar, 
             borderRadius: '6px',
             fontSize: '13px',
             marginBottom: '14px'
-          }}>
+          }} role="alert">
             {erro}
           </div>
         )}
 
         <form onSubmit={handleSubmit}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+          <div className="modal-form-grid">
             <div className="form-group">
-              <label className="form-label">Nome do Cliente *</label>
+              <label className="form-label" htmlFor="novo-lead-nome">Nome do Cliente *</label>
               <input
+                id="novo-lead-nome"
                 type="text"
                 className="form-input"
                 placeholder="Ex: Carlos Silva"
@@ -112,8 +113,9 @@ export const ModalNovoLead: React.FC<ModalNovoLeadProps> = ({ aberto, onFechar, 
             </div>
 
             <div className="form-group">
-              <label className="form-label">Responsável pelo Lead</label>
+              <label className="form-label" htmlFor="novo-lead-responsavel">Responsável pelo Lead</label>
               <input
+                id="novo-lead-responsavel"
                 type="text"
                 className="form-input"
                 placeholder="Ex: Robson, Mariana..."
@@ -123,36 +125,41 @@ export const ModalNovoLead: React.FC<ModalNovoLeadProps> = ({ aberto, onFechar, 
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+          <div className="modal-form-grid">
             <div className="form-group">
-              <label className="form-label">WhatsApp</label>
+              <label className="form-label" htmlFor="novo-lead-whatsapp">WhatsApp</label>
               <input
+                id="novo-lead-whatsapp"
                 type="text"
                 className="form-input"
                 placeholder="Ex: (11) 98888-7777"
                 value={whatsapp}
                 onChange={e => setWhatsapp(e.target.value)}
+                aria-describedby="novo-lead-contato-ajuda"
               />
             </div>
 
             <div className="form-group">
-              <label className="form-label">E-mail</label>
+              <label className="form-label" htmlFor="novo-lead-email">E-mail</label>
               <input
+                id="novo-lead-email"
                 type="email"
                 className="form-input"
                 placeholder="Ex: cliente@email.com"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
+                aria-describedby="novo-lead-contato-ajuda"
               />
             </div>
           </div>
-          <small style={{ display: 'block', color: 'var(--text-muted)', fontSize: '11px', marginTop: '-8px', marginBottom: '12px' }}>
+          <small id="novo-lead-contato-ajuda" style={{ display: 'block', color: 'var(--text-muted)', fontSize: '11px', marginTop: '-8px', marginBottom: '12px' }}>
             * Preencha pelo menos um: WhatsApp ou E-mail.
           </small>
 
           <div className="form-group">
-            <label className="form-label">Serviço Desejado *</label>
+            <label className="form-label" htmlFor="novo-lead-servico">Serviço Desejado *</label>
             <input
+              id="novo-lead-servico"
               type="text"
               className="form-input"
               placeholder="Ex: Consultoria, Projeto, Reforma..."
@@ -162,10 +169,11 @@ export const ModalNovoLead: React.FC<ModalNovoLeadProps> = ({ aberto, onFechar, 
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+          <div className="modal-form-grid">
             <div className="form-group">
-              <label className="form-label">Valor Estimado (R$)</label>
+              <label className="form-label" htmlFor="novo-lead-valor">Valor Estimado (R$)</label>
               <input
+                id="novo-lead-valor"
                 type="text"
                 className="form-input"
                 placeholder="Ex: 1500,00"
@@ -175,8 +183,9 @@ export const ModalNovoLead: React.FC<ModalNovoLeadProps> = ({ aberto, onFechar, 
             </div>
 
             <div className="form-group">
-              <label className="form-label">Origem do Lead</label>
+              <label className="form-label" htmlFor="novo-lead-origem">Origem do Lead</label>
               <select
+                id="novo-lead-origem"
                 className="form-select"
                 value={origem}
                 onChange={e => setOrigem(e.target.value as LeadOrigem)}

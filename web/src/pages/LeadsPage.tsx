@@ -1,16 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { apiFetch } from '../api/client.js';
 import { Lead } from '@radar/shared';
 import { CardLead } from '../components/CardLead.js';
 import { ModalAcao } from '../components/ModalAcao.js';
 import { ModalNovoLead } from '../components/ModalNovoLead.js';
 import { ModalEditarLead } from '../components/ModalEditarLead.js';
+import { FeedbackAcaoRapida } from '../components/FeedbackAcaoRapida.js';
 import { LoadingState, EmptyState, ErrorState } from '../components/FeedbackStates.js';
+
+type TipoAcaoRapida = 'contato' | 'orcamento' | 'fechou';
 
 export const LeadsPage: React.FC = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
+  const [acaoEmAndamento, setAcaoEmAndamento] = useState<{ leadId: number; tipoAcao: TipoAcaoRapida } | null>(null);
+  const [feedbackAcao, setFeedbackAcao] = useState<{ tipo: 'sucesso' | 'erro' | 'aviso'; mensagem: string } | null>(null);
+  const acaoRapidaEmAndamentoRef = useRef(false);
 
   // Filtros
   const [busca, setBusca] = useState('');
@@ -34,10 +40,12 @@ export const LeadsPage: React.FC = () => {
     leadNome: ''
   });
 
-  const carregarLeads = async () => {
+  const carregarLeads = async (silencioso = false): Promise<boolean> => {
     try {
-      setCarregando(true);
-      setErro(null);
+      if (!silencioso) {
+        setCarregando(true);
+        setErro(null);
+      }
 
       const params = new URLSearchParams();
       if (busca.trim()) params.append('busca', busca.trim());
@@ -48,26 +56,62 @@ export const LeadsPage: React.FC = () => {
 
       const data = await apiFetch<Lead[]>(`/leads?${params.toString()}`);
       setLeads(data);
+      return true;
     } catch (err: any) {
-      setErro(err.message || 'Falha ao buscar leads');
+      if (!silencioso) {
+        setErro(err.message || 'Falha ao buscar leads');
+      }
+      return false;
     } finally {
-      setCarregando(false);
+      if (!silencioso) {
+        setCarregando(false);
+      }
     }
   };
 
   useEffect(() => {
+    setFeedbackAcao(null);
     carregarLeads();
   }, [busca, status, origem, ordenarPor, ordem]);
 
-  const handleAcaoRapida = async (leadId: number, tipoAcao: 'contato' | 'orcamento' | 'fechou') => {
+  const handleAcaoRapida = async (leadId: number, tipoAcao: TipoAcaoRapida) => {
+    if (acaoRapidaEmAndamentoRef.current) return;
+
+    const leadNome = leads.find(lead => lead.id === leadId)?.nome ?? 'este lead';
+    if (tipoAcao === 'fechou' && !window.confirm(`Confirmar que a venda de ${leadNome} foi fechada?`)) {
+      return;
+    }
+
+    acaoRapidaEmAndamentoRef.current = true;
+    setAcaoEmAndamento({ leadId, tipoAcao });
+    setFeedbackAcao(null);
+
     try {
       await apiFetch(`/leads/${leadId}/acoes`, {
         method: 'POST',
         body: JSON.stringify({ tipo: tipoAcao })
       });
-      await carregarLeads();
-    } catch (err: any) {
-      alert(`Erro ao registrar ação: ${err.message || 'Erro desconhecido'}`);
+      const listaAtualizada = await carregarLeads(true);
+      setFeedbackAcao({
+        tipo: listaAtualizada ? 'sucesso' : 'aviso',
+        mensagem: listaAtualizada
+          ? `Ação registrada para ${leadNome}.`
+          : `Ação registrada para ${leadNome}, mas a lista não foi atualizada. Atualize para conferir.`
+      });
+    } catch {
+      setFeedbackAcao({
+        tipo: 'erro',
+        mensagem: `Não foi possível confirmar se a ação foi registrada para ${leadNome}. Atualize a lista antes de tentar novamente.`
+      });
+    } finally {
+      acaoRapidaEmAndamentoRef.current = false;
+      setAcaoEmAndamento(null);
+    }
+  };
+
+  const handleAtualizarAposAcao = async () => {
+    if (await carregarLeads(true)) {
+      setFeedbackAcao(null);
     }
   };
 
@@ -92,13 +136,13 @@ export const LeadsPage: React.FC = () => {
   };
 
   return (
-    <div className="container">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-        <div>
-          <h2 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--foreground)' }}>
+    <div className="container leads-page">
+      <div className="leads-page-heading">
+        <div className="leads-heading-copy">
+          <h2 className="leads-page-title">
             Todos os Leads
           </h2>
-          <p style={{ fontSize: '13px', color: 'var(--muted-foreground)' }}>
+          <p className="leads-page-count">
             {leads.length} {leads.length === 1 ? 'oportunidade encontrada' : 'oportunidades encontradas'}
           </p>
         </div>
@@ -108,30 +152,35 @@ export const LeadsPage: React.FC = () => {
         </button>
       </div>
 
+      {feedbackAcao && (
+        <FeedbackAcaoRapida
+          tipo={feedbackAcao.tipo}
+          mensagem={feedbackAcao.mensagem}
+          acao={feedbackAcao.tipo !== 'sucesso'
+            ? { rotulo: 'Atualizar lista', executar: handleAtualizarAposAcao, desabilitada: acaoEmAndamento !== null }
+            : undefined}
+        />
+      )}
+
       {/* Barra de Busca e Filtros */}
-      <div style={{
-        background: 'var(--card)',
-        border: '1px solid var(--border)',
-        borderRadius: 'var(--radius-lg)',
-        padding: '16px',
-        marginBottom: '16px'
-      }}>
-        <div style={{ marginBottom: '10px' }}>
+      <div className="leads-filters">
+        <div className="leads-search">
           <input
             type="text"
             className="form-input"
+            aria-label="Buscar leads por nome, WhatsApp ou serviço"
             placeholder="🔎 Buscar por nome, WhatsApp ou serviço..."
             value={busca}
             onChange={e => setBusca(e.target.value)}
           />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
-          <div>
-            <label style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)' }}>STATUS</label>
+        <div className="leads-filter-grid">
+          <div className="leads-filter-field">
+            <label className="leads-filter-label" htmlFor="lead-status-filter">STATUS</label>
             <select
-              className="form-select"
-              style={{ minHeight: '38px', padding: '6px 8px', fontSize: '13px' }}
+              id="lead-status-filter"
+              className="form-select leads-filter-select"
               value={status}
               onChange={e => setStatus(e.target.value)}
             >
@@ -143,11 +192,11 @@ export const LeadsPage: React.FC = () => {
             </select>
           </div>
 
-          <div>
-            <label style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)' }}>ORIGEM</label>
+          <div className="leads-filter-field">
+            <label className="leads-filter-label" htmlFor="lead-origin-filter">ORIGEM</label>
             <select
-              className="form-select"
-              style={{ minHeight: '38px', padding: '6px 8px', fontSize: '13px' }}
+              id="lead-origin-filter"
+              className="form-select leads-filter-select"
               value={origem}
               onChange={e => setOrigem(e.target.value)}
             >
@@ -159,11 +208,11 @@ export const LeadsPage: React.FC = () => {
             </select>
           </div>
 
-          <div>
-            <label style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)' }}>ORDENAÇÃO</label>
+          <div className="leads-filter-field">
+            <label className="leads-filter-label" htmlFor="lead-order-filter">ORDENAÇÃO</label>
             <select
-              className="form-select"
-              style={{ minHeight: '38px', padding: '6px 8px', fontSize: '13px' }}
+              id="lead-order-filter"
+              className="form-select leads-filter-select"
               value={`${ordenarPor}-${ordem}`}
               onChange={e => {
                 const [c, o] = e.target.value.split('-');
@@ -203,6 +252,7 @@ export const LeadsPage: React.FC = () => {
               key={lead.id}
               lead={lead}
               onAcaoRapida={handleAcaoRapida}
+              acaoEmAndamento={acaoEmAndamento}
               onAbrirModal={handleAbrirModal}
               onEditar={(l) => setLeadParaEditar(l)}
               onExcluir={handleExcluirLead}
@@ -222,7 +272,7 @@ export const LeadsPage: React.FC = () => {
       <ModalNovoLead
         aberto={modalNovoAberto}
         onFechar={() => setModalNovoAberto(false)}
-        onCriado={carregarLeads}
+        onCriado={() => carregarLeads()}
       />
 
       <ModalEditarLead

@@ -97,9 +97,9 @@ export const ModalEditarLead: React.FC<ModalEditarLeadProps> = ({
 
   return (
     <div className="modal-overlay" onClick={onFechar}>
-      <div className="modal-content" onClick={e => e.stopPropagation()}>
+      <div className="modal-content" role="dialog" aria-modal="true" aria-labelledby="editar-lead-titulo" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h2 className="modal-title">✏️ Editar Lead</h2>
+          <h2 className="modal-title" id="editar-lead-titulo">✏️ Editar Lead</h2>
           <button className="btn-close" onClick={onFechar}>&times;</button>
         </div>
 
@@ -112,16 +112,17 @@ export const ModalEditarLead: React.FC<ModalEditarLeadProps> = ({
             borderRadius: '6px',
             fontSize: '13px',
             marginBottom: '14px'
-          }}>
+          }} role="alert">
             {erro}
           </div>
         )}
 
         <form onSubmit={handleSubmit}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+          <div className="modal-form-grid">
             <div className="form-group">
-              <label className="form-label">Nome do Cliente *</label>
+              <label className="form-label" htmlFor="editar-lead-nome">Nome do Cliente *</label>
               <input
+                id="editar-lead-nome"
                 type="text"
                 className="form-input"
                 value={nome}
@@ -131,8 +132,9 @@ export const ModalEditarLead: React.FC<ModalEditarLeadProps> = ({
             </div>
 
             <div className="form-group">
-              <label className="form-label">Responsável pelo Lead</label>
+              <label className="form-label" htmlFor="editar-lead-responsavel">Responsável pelo Lead</label>
               <input
+                id="editar-lead-responsavel"
                 type="text"
                 className="form-input"
                 placeholder="Ex: Robson, Mariana..."
@@ -142,10 +144,11 @@ export const ModalEditarLead: React.FC<ModalEditarLeadProps> = ({
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+          <div className="modal-form-grid">
             <div className="form-group">
-              <label className="form-label">WhatsApp</label>
+              <label className="form-label" htmlFor="editar-lead-whatsapp">WhatsApp</label>
               <input
+                id="editar-lead-whatsapp"
                 type="text"
                 className="form-input"
                 placeholder="(11) 98888-7777"
@@ -155,8 +158,9 @@ export const ModalEditarLead: React.FC<ModalEditarLeadProps> = ({
             </div>
 
             <div className="form-group">
-              <label className="form-label">E-mail</label>
+              <label className="form-label" htmlFor="editar-lead-email">E-mail</label>
               <input
+                id="editar-lead-email"
                 type="email"
                 className="form-input"
                 placeholder="cliente@email.com"
@@ -167,8 +171,9 @@ export const ModalEditarLead: React.FC<ModalEditarLeadProps> = ({
           </div>
 
           <div className="form-group">
-            <label className="form-label">Serviço *</label>
+            <label className="form-label" htmlFor="editar-lead-servico">Serviço *</label>
             <input
+              id="editar-lead-servico"
               type="text"
               className="form-input"
               value={servico}
@@ -177,10 +182,11 @@ export const ModalEditarLead: React.FC<ModalEditarLeadProps> = ({
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+          <div className="modal-form-grid">
             <div className="form-group">
-              <label className="form-label">Valor Estimado (R$)</label>
+              <label className="form-label" htmlFor="editar-lead-valor">Valor Estimado (R$)</label>
               <input
+                id="editar-lead-valor"
                 type="text"
                 className="form-input"
                 value={valorTexto}
@@ -189,8 +195,9 @@ export const ModalEditarLead: React.FC<ModalEditarLeadProps> = ({
             </div>
 
             <div className="form-group">
-              <label className="form-label">Origem</label>
+              <label className="form-label" htmlFor="editar-lead-origem">Origem</label>
               <select
+                id="editar-lead-origem"
                 className="form-select"
                 value={origem}
                 onChange={e => setOrigem(e.target.value as LeadOrigem)}
@@ -204,8 +211,9 @@ export const ModalEditarLead: React.FC<ModalEditarLeadProps> = ({
           </div>
 
           <div className="form-group">
-            <label className="form-label">Status da Oportunidade</label>
+            <label className="form-label" htmlFor="editar-lead-status">Status da Oportunidade</label>
             <select
+              id="editar-lead-status"
               className="form-select"
               value={status}
               onChange={e => setStatus(e.target.value as LeadStatus)}
@@ -219,8 +227,9 @@ export const ModalEditarLead: React.FC<ModalEditarLeadProps> = ({
 
           {status === 'perdido' && (
             <div className="form-group">
-              <label className="form-label">Motivo da Perda *</label>
+              <label className="form-label" htmlFor="editar-lead-motivo-perda">Motivo da Perda *</label>
               <input
+                id="editar-lead-motivo-perda"
                 type="text"
                 className="form-input"
                 placeholder="Ex: Achou caro, fechou com concorrente..."

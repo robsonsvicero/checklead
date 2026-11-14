@@ -27,7 +27,7 @@ export const ErrorState: React.FC<{
   detalhes?: string[];
   onTentarNovamente?: () => void;
 }> = ({ mensagem, detalhes, onTentarNovamente }) => (
-  <div className="state-container" style={{ borderColor: 'rgba(216,112,104,0.3)', background: 'var(--danger-soft)' }}>
+  <div className="state-container" style={{ borderColor: 'var(--danger-border)', background: 'var(--danger-soft)' }}>
     <div style={{ fontSize: '32px', marginBottom: '8px' }}>⚠️</div>
     <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--destructive)', marginBottom: '4px' }}>
       Algo deu errado

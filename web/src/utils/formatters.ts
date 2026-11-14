@@ -1,3 +1,16 @@
+import type { LeadStatus } from '@radar/shared';
+
+const rotulosStatus: Record<LeadStatus, string> = {
+  novo: 'Novo',
+  orcamento_enviado: 'Orçado',
+  fechado: 'Fechado',
+  perdido: 'Perdido'
+};
+
+export function formatarStatusLead(status: LeadStatus): string {
+  return rotulosStatus[status];
+}
+
 export function formatarMoeda(centavos: number | null | undefined): string {
   const valor = (centavos || 0) / 100;
   return valor.toLocaleString('pt-BR', {

@@ -8,6 +8,7 @@ export const ConfigPage: React.FC = () => {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [mensagemSucesso, setMensagemSucesso] = useState<string | null>(null);
+  const [erroSalvarLimites, setErroSalvarLimites] = useState<string | null>(null);
 
   // Troca de Senha
   const [senhaAtual, setSenhaAtual] = useState('');
@@ -45,6 +46,7 @@ export const ConfigPage: React.FC = () => {
 
     try {
       setMensagemSucesso(null);
+      setErroSalvarLimites(null);
       const atualizado = await apiFetch<Configuracao>('/config', {
         method: 'PUT',
         body: JSON.stringify(config)
@@ -53,7 +55,7 @@ export const ConfigPage: React.FC = () => {
       setMensagemSucesso('Limites do Radar atualizados com sucesso!');
       setTimeout(() => setMensagemSucesso(null), 4000);
     } catch (err: any) {
-      alert(`Erro ao salvar: ${err.message || 'Falha na requisição'}`);
+      setErroSalvarLimites(err.message || 'Falha ao salvar os limites do Radar.');
     }
   };
 
@@ -158,11 +160,11 @@ export const ConfigPage: React.FC = () => {
 
   return (
     <div className="container">
-      <div style={{ marginBottom: '20px' }}>
-        <h2 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--foreground)' }}>
+      <div className="page-heading">
+        <h2 className="page-title">
           ⚙️ Configurações & Backup
         </h2>
-        <p style={{ fontSize: '13px', color: 'var(--muted-foreground)' }}>
+        <p className="page-subtitle">
           Ajuste as regras de vazamento e proteja seus dados
         </p>
       </div>
@@ -174,13 +176,7 @@ export const ConfigPage: React.FC = () => {
       {config && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {/* Seção 1: Limites do Radar */}
-          <div style={{
-            background: 'var(--card)',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-lg)',
-            padding: '24px',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
-          }}>
+          <div className="config-section">
             <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--foreground)', marginBottom: '4px' }}>
               Regras do Detector de Vazamento
             </h3>
@@ -197,62 +193,74 @@ export const ConfigPage: React.FC = () => {
                 borderRadius: '8px',
                 fontSize: '13px',
                 marginBottom: '16px'
-              }}>
+              }} role="status">
                 {mensagemSucesso}
+              </div>
+            )}
+
+            {erroSalvarLimites && (
+              <div className="config-message error" role="alert">
+                {erroSalvarLimites}
               </div>
             )}
 
             <form onSubmit={handleSalvarLimites}>
               <div className="form-group">
-                <label className="form-label">
+                <label className="form-label" htmlFor="limite-sem-resposta">
                   🚨 Lead novo sem contato (em horas):
                 </label>
                 <input
+                  id="limite-sem-resposta"
                   type="number"
                   min="1"
                   max="720"
                   className="form-input"
                   value={config.limite_sem_resposta_horas}
                   onChange={e => setConfig({ ...config, limite_sem_resposta_horas: Number(e.target.value) })}
+                  aria-describedby="ajuda-limite-sem-resposta"
                   required
                 />
-                <small style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
+                <small id="ajuda-limite-sem-resposta" style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
                   Padrão: 24 horas. Se passar disso sem você falar com ele, apita no Radar.
                 </small>
               </div>
 
               <div className="form-group">
-                <label className="form-label">
+                <label className="form-label" htmlFor="limite-follow-up">
                   ⏰ Orçamento enviado sem follow-up (em dias):
                 </label>
                 <input
+                  id="limite-follow-up"
                   type="number"
                   min="1"
                   max="90"
                   className="form-input"
                   value={config.limite_follow_up_dias}
                   onChange={e => setConfig({ ...config, limite_follow_up_dias: Number(e.target.value) })}
+                  aria-describedby="ajuda-limite-follow-up"
                   required
                 />
-                <small style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
+                <small id="ajuda-limite-follow-up" style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
                   Padrão: 3 dias. Orçamento na mão do cliente sem retorno vira alerta.
                 </small>
               </div>
 
               <div className="form-group">
-                <label className="form-label">
+                <label className="form-label" htmlFor="limite-lead-parado">
                   🧊 Lead parado sem nenhuma interação (em dias):
                 </label>
                 <input
+                  id="limite-lead-parado"
                   type="number"
                   min="1"
                   max="180"
                   className="form-input"
                   value={config.limite_lead_parado_dias}
                   onChange={e => setConfig({ ...config, limite_lead_parado_dias: Number(e.target.value) })}
+                  aria-describedby="ajuda-limite-lead-parado"
                   required
                 />
-                <small style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
+                <small id="ajuda-limite-lead-parado" style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
                   Padrão: 7 dias. Oportunidade esquecida que precisa de um toque.
                 </small>
               </div>
@@ -264,13 +272,7 @@ export const ConfigPage: React.FC = () => {
           </div>
 
           {/* Seção 2: Planilha de Leads & Backup */}
-          <div style={{
-            background: 'var(--card)',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-lg)',
-            padding: '24px',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
-          }}>
+          <div className="config-section">
             <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--foreground)', marginBottom: '4px' }}>
               Planilha de Leads & Backup
             </h3>
@@ -279,45 +281,23 @@ export const ConfigPage: React.FC = () => {
             </p>
 
             {resultadoImport && (
-              <div style={{
-                background: 'hsl(160 70% 45% / 0.12)',
-                border: '1px solid hsl(160 70% 45% / 0.3)',
-                color: 'hsl(160 70% 70%)',
-                padding: '10px 14px',
-                borderRadius: '8px',
-                fontSize: '13px',
-                marginBottom: '16px'
-              }}>
+              <div className="config-message success" role="status">
                 {resultadoImport}
               </div>
             )}
 
             {erroImport && (
-              <div style={{
-                background: 'hsl(0 84% 60% / 0.12)',
-                border: '1px solid hsl(0 84% 60% / 0.3)',
-                color: 'var(--destructive)',
-                padding: '10px 14px',
-                borderRadius: '8px',
-                fontSize: '13px',
-                marginBottom: '16px'
-              }}>
+              <div className="config-message error" role="alert">
                 {erroImport}
               </div>
             )}
 
             {/* Destaque: Importação e Modelo de Planilha */}
-            <div style={{
-              background: 'var(--muted)',
-              border: '1px solid var(--border)',
-              borderRadius: 'var(--radius-md)',
-              padding: '18px',
-              marginBottom: '20px'
-            }}>
-              <h4 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--foreground)', marginBottom: '6px' }}>
+            <div className="config-import-panel">
+              <h4 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--primary-ink)', marginBottom: '6px' }}>
                 📊 Importar Planilha de Leads (CSV)
               </h4>
-              <p style={{ fontSize: '13px', color: 'var(--muted-foreground)', marginBottom: '14px' }}>
+              <p style={{ fontSize: '13px', color: 'var(--primary-ink)', marginBottom: '14px' }}>
                 Colunas aceitas: <b>Nome</b>, <b>WhatsApp</b>, <b>E-mail</b>, <b>Responsável</b>, <b>Serviço</b>, <b>Valor Estimado (R$)</b>, <b>Origem</b>, <b>Status</b> e <b>Motivo da Perda</b>.
               </p>
 
@@ -368,8 +348,9 @@ export const ConfigPage: React.FC = () => {
             </div>
 
             <div style={{ borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
-              <label className="form-label" style={{ fontSize: '12px' }}>Restaurar cópia de segurança completa (JSON):</label>
+              <label className="form-label" htmlFor="backup-json-file" style={{ fontSize: '12px' }}>Restaurar cópia de segurança completa (JSON):</label>
               <input
+                id="backup-json-file"
                 type="file"
                 accept=".json"
                 onChange={handleImportarArquivoJson}
@@ -381,13 +362,7 @@ export const ConfigPage: React.FC = () => {
           </div>
 
           {/* Seção 3: Troca de Senha */}
-          <div style={{
-            background: 'var(--card)',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-lg)',
-            padding: '24px',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
-          }}>
+          <div className="config-section">
             <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--foreground)', marginBottom: '4px' }}>
               Segurança: Trocar Senha
             </h3>
@@ -404,7 +379,7 @@ export const ConfigPage: React.FC = () => {
                 borderRadius: '8px',
                 fontSize: '13px',
                 marginBottom: '16px'
-              }}>
+              }} role="alert">
                 {erroSenha}
               </div>
             )}
@@ -418,41 +393,47 @@ export const ConfigPage: React.FC = () => {
                 borderRadius: '8px',
                 fontSize: '13px',
                 marginBottom: '16px'
-              }}>
+              }} role="status">
                 {sucessoSenha}
               </div>
             )}
 
             <form onSubmit={handleTrocarSenha}>
               <div className="form-group">
-                <label className="form-label">Senha Atual</label>
+                <label className="form-label" htmlFor="senha-atual">Senha Atual</label>
                 <input
+                  id="senha-atual"
                   type="password"
                   className="form-input"
                   value={senhaAtual}
                   onChange={e => setSenhaAtual(e.target.value)}
+                  autoComplete="current-password"
                   required
                 />
               </div>
 
               <div className="form-group">
-                <label className="form-label">Nova Senha (mínimo 6 caracteres)</label>
+                <label className="form-label" htmlFor="nova-senha">Nova Senha (mínimo 6 caracteres)</label>
                 <input
+                  id="nova-senha"
                   type="password"
                   className="form-input"
                   value={novaSenha}
                   onChange={e => setNovaSenha(e.target.value)}
+                  autoComplete="new-password"
                   required
                 />
               </div>
 
               <div className="form-group">
-                <label className="form-label">Confirme a Nova Senha</label>
+                <label className="form-label" htmlFor="confirmacao-nova-senha">Confirme a Nova Senha</label>
                 <input
+                  id="confirmacao-nova-senha"
                   type="password"
                   className="form-input"
                   value={confirmacaoNova}
                   onChange={e => setConfirmacaoNova(e.target.value)}
+                  autoComplete="new-password"
                   required
                 />
               </div>

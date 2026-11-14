@@ -1,21 +1,80 @@
-import React, { useState, useEffect } from 'react';
-import { apiFetch } from '../api/client.js';
+import React, { useState, useEffect, useRef } from 'react';
+import { ApiError, apiFetch } from '../api/client.js';
 import { AlertaLead, MetricasRadar, Lead } from '@radar/shared';
-import { CardAlerta } from '../components/CardAlerta.js';
+import { CardAlerta, TipoAcaoRapida } from '../components/CardAlerta.js';
 import { ModalAcao } from '../components/ModalAcao.js';
 import { ModalNovoLead } from '../components/ModalNovoLead.js';
+import { FeedbackAcaoRapida } from '../components/FeedbackAcaoRapida.js';
 import { LoadingState, EmptyState, ErrorState } from '../components/FeedbackStates.js';
 import { formatarMoeda } from '../utils/formatters.js';
+import { useAuth } from '../context/AuthContext.js';
+
+type RecuperacaoAcao = 'repetir' | 'atualizar' | 'nenhuma';
+
+interface FeedbackAcao {
+  tipo: 'sucesso' | 'erro';
+  leadId: number;
+  leadNome: string;
+  tipoAcao: TipoAcaoRapida;
+  mensagem: string;
+  recuperacao: RecuperacaoAcao;
+}
+
+const obterErroAcao = (erro: unknown): { mensagem: string; recuperacao: RecuperacaoAcao } => {
+  if (erro instanceof ApiError) {
+    if (erro.status === 401) {
+      return { mensagem: 'Sua sessão expirou. Entre novamente.', recuperacao: 'nenhuma' };
+    }
+    if (erro.status === 403) {
+      return { mensagem: 'Você não tem permissão para registrar esta ação.', recuperacao: 'nenhuma' };
+    }
+    if (erro.status === 404) {
+      return { mensagem: 'Este lead não está mais disponível. Atualize o Radar.', recuperacao: 'atualizar' };
+    }
+    if (erro.status === 429) {
+      return { mensagem: 'Aguarde um momento e tente novamente.', recuperacao: 'repetir' };
+    }
+    if (erro.status === 400) {
+      return { mensagem: erro.message || 'Revise os dados desta ação e tente novamente.', recuperacao: 'nenhuma' };
+    }
+    if (erro.status >= 500) {
+      return {
+        mensagem: 'Não foi possível confirmar se a ação foi registrada. Atualize o Radar antes de tentar novamente.',
+        recuperacao: 'atualizar'
+      };
+    }
+  }
+
+  if (erro instanceof TypeError) {
+    return {
+      mensagem: 'Não foi possível confirmar se a ação foi registrada. Verifique a conexão e atualize o Radar.',
+      recuperacao: 'atualizar'
+    };
+  }
+
+  return {
+    mensagem: 'Não foi possível confirmar se a ação foi registrada. Atualize o Radar antes de tentar novamente.',
+    recuperacao: 'atualizar'
+  };
+};
 
 interface RadarPageProps {
   onAtualizarAlertasTotal?: (total: number) => void;
 }
 
 export const RadarPage: React.FC<RadarPageProps> = ({ onAtualizarAlertasTotal }) => {
+  const { checkAuth } = useAuth();
   const [alertas, setAlertas] = useState<AlertaLead[]>([]);
   const [metricas, setMetricas] = useState<MetricasRadar | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
+  const [erroAtualizacao, setErroAtualizacao] = useState<string | null>(null);
+  const [acaoEmAndamento, setAcaoEmAndamento] = useState<{
+    leadId: number;
+    tipoAcao: TipoAcaoRapida;
+  } | null>(null);
+  const [feedbackAcao, setFeedbackAcao] = useState<FeedbackAcao | null>(null);
+  const acaoRapidaEmAndamentoRef = useRef(false);
 
   // Controle de Modais
   const [modalNovoAberto, setModalNovoAberto] = useState(false);
@@ -31,10 +90,15 @@ export const RadarPage: React.FC<RadarPageProps> = ({ onAtualizarAlertasTotal })
     leadNome: ''
   });
 
-  const carregarDados = async () => {
+  const carregarDados = async (silencioso = false): Promise<boolean> => {
     try {
-      setCarregando(true);
-      setErro(null);
+      if (silencioso) {
+        setErroAtualizacao(null);
+      } else {
+        setCarregando(true);
+        setErro(null);
+        setErroAtualizacao(null);
+      }
 
       const [alertasData, metricasData] = await Promise.all([
         apiFetch<AlertaLead[]>('/radar/alertas'),
@@ -46,10 +110,29 @@ export const RadarPage: React.FC<RadarPageProps> = ({ onAtualizarAlertasTotal })
       if (onAtualizarAlertasTotal) {
         onAtualizarAlertasTotal(alertasData.length);
       }
-    } catch (err: any) {
-      setErro(err.message || 'Falha ao carregar dados do Radar');
+      return true;
+    } catch (err: unknown) {
+      if (err instanceof ApiError && err.status === 401) {
+        await checkAuth();
+      }
+      const mensagem = err instanceof ApiError && err.status >= 500
+        ? 'Não foi possível carregar o Radar. Tente novamente.'
+        : err instanceof TypeError
+          ? 'Sem conexão com o servidor. Verifique sua conexão e tente novamente.'
+          : err instanceof Error
+            ? err.message
+            : 'Não foi possível carregar o Radar. Tente novamente.';
+
+      if (silencioso) {
+        setErroAtualizacao(`Sua ação foi registrada, mas ${mensagem.charAt(0).toLowerCase()}${mensagem.slice(1)}`);
+      } else {
+        setErro(mensagem);
+      }
+      return false;
     } finally {
-      setCarregando(false);
+      if (!silencioso) {
+        setCarregando(false);
+      }
     }
   };
 
@@ -57,15 +140,63 @@ export const RadarPage: React.FC<RadarPageProps> = ({ onAtualizarAlertasTotal })
     carregarDados();
   }, []);
 
-  const handleAcaoRapida = async (leadId: number, tipoAcao: 'contato' | 'orcamento' | 'fechou') => {
+  const handleAcaoRapida = async (leadId: number, tipoAcao: TipoAcaoRapida) => {
+    if (acaoRapidaEmAndamentoRef.current) {
+      return;
+    }
+
+    const leadNome = alertas.find(alerta => alerta.lead_id === leadId)?.lead_nome ?? 'este lead';
+    if (tipoAcao === 'fechou' && !window.confirm(`Confirmar que a venda de ${leadNome} foi fechada?`)) {
+      return;
+    }
+
+    acaoRapidaEmAndamentoRef.current = true;
+    setAcaoEmAndamento({ leadId, tipoAcao });
+    setFeedbackAcao(null);
+    setErroAtualizacao(null);
+
+    const nomeAcao = {
+      contato: 'o contato',
+      orcamento: 'o envio do orçamento',
+      fechou: 'o fechamento'
+    }[tipoAcao];
+
     try {
       await apiFetch(`/leads/${leadId}/acoes`, {
         method: 'POST',
         body: JSON.stringify({ tipo: tipoAcao })
       });
-      await carregarDados();
-    } catch (err: any) {
-      alert(`Erro ao registrar ação: ${err.message || 'Erro desconhecido'}`);
+      setFeedbackAcao({
+        tipo: 'sucesso',
+        leadId,
+        leadNome,
+        tipoAcao,
+        mensagem: `${nomeAcao} registrado para ${leadNome}.`,
+        recuperacao: 'nenhuma'
+      });
+      await carregarDados(true);
+    } catch (err: unknown) {
+      if (err instanceof ApiError && err.status === 401) {
+        await checkAuth();
+      }
+      const resultado = obterErroAcao(err);
+      setFeedbackAcao({
+        tipo: 'erro',
+        leadId,
+        leadNome,
+        tipoAcao,
+        mensagem: `Não foi possível registrar ${nomeAcao} para ${leadNome}. ${resultado.mensagem}`,
+        recuperacao: resultado.recuperacao
+      });
+    } finally {
+      acaoRapidaEmAndamentoRef.current = false;
+      setAcaoEmAndamento(null);
+    }
+  };
+
+  const handleAtualizarAcao = async () => {
+    if (await carregarDados(true)) {
+      setFeedbackAcao(null);
     }
   };
 
@@ -84,62 +215,13 @@ export const RadarPage: React.FC<RadarPageProps> = ({ onAtualizarAlertasTotal })
 
   return (
     <div className="container">
-      {/* 4 Métricas de Impacto no Topo */}
-      {metricas && (
-        <div className="metricas-grid">
-          <div className="metrica-card">
-            <span className="label">Taxa de Fechamento</span>
-            <span className="valor" style={{ color: 'var(--primary)' }}>
-              {metricas.taxa_fechamento_percentual !== null
-                ? `${metricas.taxa_fechamento_percentual}%`
-                : '—'}
-            </span>
-            <small style={{ fontSize: '11px', color: 'var(--muted-foreground)', marginTop: '4px' }}>
-              {metricas.total_fechados} de {metricas.total_fechados + metricas.total_perdidos} decididos
-            </small>
-          </div>
-
-          <div className="metrica-card">
-            <span className="label">Tempo até Orçamento</span>
-            <span className="valor">
-              {metricas.tempo_medio_orcamento_horas !== null
-                ? `${metricas.tempo_medio_orcamento_horas}h`
-                : '—'}
-            </span>
-            <small style={{ fontSize: '11px', color: 'var(--muted-foreground)', marginTop: '4px' }}>
-              média 1º contato → envio
-            </small>
-          </div>
-
-          <div className="metrica-card">
-            <span className="label">Valor em Aberto</span>
-            <span className="valor">
-              {formatarMoeda(metricas.valor_em_aberto)}
-            </span>
-            <small style={{ fontSize: '11px', color: 'var(--muted-foreground)', marginTop: '4px' }}>
-              leads novos e orçados
-            </small>
-          </div>
-
-          <div className="metrica-card danger">
-            <span className="label">Perdido no Mês</span>
-            <span className="valor">
-              {formatarMoeda(metricas.valor_perdido_mes)}
-            </span>
-            <small style={{ fontSize: '11px', color: 'var(--muted-foreground)', marginTop: '4px' }}>
-              {metricas.total_perdidos} leads perdidos
-            </small>
-          </div>
-        </div>
-      )}
-
       {/* Seção Principal: Agir Agora */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+      <div className="radar-page-heading">
         <div>
-          <h2 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--foreground)' }}>
+          <h2 className="radar-title">
             ⚠️ Agir agora
           </h2>
-          <p style={{ fontSize: '13px', color: 'var(--muted-foreground)' }}>
+          <p className="radar-subtitle">
             Onde você está correndo risco de perder a venda
           </p>
         </div>
@@ -147,11 +229,35 @@ export const RadarPage: React.FC<RadarPageProps> = ({ onAtualizarAlertasTotal })
         <button
           className="btn-acao primary"
           onClick={() => setModalNovoAberto(true)}
-          style={{ padding: '8px 14px' }}
         >
           + Novo Lead
         </button>
       </div>
+
+      {feedbackAcao && (
+        <FeedbackAcaoRapida
+          tipo={feedbackAcao.tipo}
+          mensagem={feedbackAcao.mensagem}
+          acao={feedbackAcao.tipo === 'erro' && feedbackAcao.recuperacao === 'repetir'
+            ? {
+                rotulo: 'Tentar novamente',
+                executar: () => handleAcaoRapida(feedbackAcao.leadId, feedbackAcao.tipoAcao),
+                desabilitada: acaoEmAndamento !== null
+              }
+            : feedbackAcao.tipo === 'erro' && feedbackAcao.recuperacao === 'atualizar'
+              ? { rotulo: 'Atualizar Radar', executar: handleAtualizarAcao }
+              : undefined}
+        />
+      )}
+
+      {erroAtualizacao && (
+        <div className="radar-feedback aviso" role="alert">
+          <span>{erroAtualizacao}</span>
+          <button className="btn-acao" onClick={() => carregarDados(true)}>
+            Atualizar Radar
+          </button>
+        </div>
+      )}
 
       {carregando && <LoadingState mensagem="Analisando oportunidades no Radar..." />}
 
@@ -159,7 +265,7 @@ export const RadarPage: React.FC<RadarPageProps> = ({ onAtualizarAlertasTotal })
 
       {!carregando && !erro && alertas.length === 0 && (
         <EmptyState
-          titulo="Tudo sob controle! 🎯"
+          titulo="Nenhum alerta pendente"
           mensagem="Nenhum lead está com resposta atrasada, orçamento sem retorno ou parado há muito tempo."
           acao={
             <button className="btn-acao primary" onClick={() => setModalNovoAberto(true)}>
@@ -177,12 +283,64 @@ export const RadarPage: React.FC<RadarPageProps> = ({ onAtualizarAlertasTotal })
               alerta={alerta}
               onAcaoRapida={handleAcaoRapida}
               onAbrirModal={handleAbrirModal}
+              acaoRapidaDesabilitada={acaoEmAndamento !== null}
+              tipoAcaoEmAndamento={acaoEmAndamento?.leadId === alerta.lead_id
+                ? acaoEmAndamento.tipoAcao
+                : null}
             />
           ))}
         </div>
       )}
 
-      {/* Botão Flutuante (FAB) para agilidade no celular */}
+      {metricas && (
+        <div className="metricas-grid">
+          <div className="metrica-card success">
+            <span className="label">Taxa de Fechamento</span>
+            <span className="valor">
+              {metricas.taxa_fechamento_percentual !== null
+                ? `${metricas.taxa_fechamento_percentual}%`
+                : '—'}
+            </span>
+            <small className="metrica-note">
+              {metricas.total_fechados} fechados · {metricas.total_perdidos} perdidos
+            </small>
+          </div>
+
+          <div className="metrica-card info">
+            <span className="label">Tempo até Orçamento</span>
+            <span className="valor">
+              {metricas.tempo_medio_orcamento_horas !== null
+                ? `${metricas.tempo_medio_orcamento_horas}h`
+                : '—'}
+            </span>
+            <small className="metrica-note">
+              média 1º contato → envio
+            </small>
+          </div>
+
+          <div className="metrica-card primary">
+            <span className="label">Valor em Aberto</span>
+            <span className="valor">
+              {formatarMoeda(metricas.valor_em_aberto)}
+            </span>
+            <small className="metrica-note">
+              leads novos e orçados
+            </small>
+          </div>
+
+          <div className="metrica-card danger">
+            <span className="label">Perdido no Mês</span>
+            <span className="valor">
+              {formatarMoeda(metricas.valor_perdido_mes)}
+            </span>
+            <small className="metrica-note">
+              {metricas.total_perdidos} leads perdidos
+            </small>
+          </div>
+        </div>
+      )}
+
+      {/* Botão flutuante no desktop */}
       <button
         className="fab-novo-lead"
         onClick={() => setModalNovoAberto(true)}

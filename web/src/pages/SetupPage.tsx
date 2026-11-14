@@ -37,22 +37,18 @@ export const SetupPage: React.FC = () => {
   };
 
   return (
-    <div style={{
+    <div className="auth-screen" style={{
       minHeight: '100vh',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       padding: '16px',
-      background: 'var(--background)'
     }}>
-      <div style={{
-        background: 'var(--card)',
-        border: '1px solid var(--border)',
+      <div className="auth-panel" style={{
         width: '100%',
         maxWidth: '440px',
         padding: '32px 28px',
         borderRadius: 'var(--radius-lg)',
-        boxShadow: '0 4px 24px rgba(37,45,61,0.1)'
       }}>
         <div style={{ textAlign: 'center', marginBottom: '28px' }}>
           <div style={{ display: 'inline-flex', marginBottom: '12px' }}>
@@ -61,8 +57,8 @@ export const SetupPage: React.FC = () => {
               <img src="/favicon.svg" alt="CheckLead" style={{ width: '40px', height: '40px' }} />
             </span>
           </div>
-          <h1 style={{ fontSize: '20px', fontWeight: 750, color: 'var(--foreground)', letterSpacing: '0.04em' }}>CheckLead</h1>
-          <p style={{ fontSize: '13px', color: 'var(--muted-foreground)', marginTop: '4px' }}>
+          <h1 className="auth-title" style={{ fontSize: '20px', fontWeight: 750, letterSpacing: '0.04em' }}>CheckLead</h1>
+          <p className="auth-subtitle" style={{ fontSize: '13px', marginTop: '4px' }}>
             Defina uma senha mestre para proteger seus dados locais.
           </p>
         </div>
@@ -83,26 +79,30 @@ export const SetupPage: React.FC = () => {
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label className="form-label">Criar Senha de Acesso</label>
+            <label className="form-label" htmlFor="setup-senha">Criar Senha de Acesso</label>
             <input
+              id="setup-senha"
               type="password"
               className="form-input"
               placeholder="Mínimo 6 caracteres"
               value={senha}
               onChange={e => setSenha(e.target.value)}
+              autoComplete="new-password"
               required
               autoFocus
             />
           </div>
 
           <div className="form-group">
-            <label className="form-label">Confirme a Senha</label>
+            <label className="form-label" htmlFor="setup-senha-confirmacao">Confirme a Senha</label>
             <input
+              id="setup-senha-confirmacao"
               type="password"
               className="form-input"
               placeholder="Digite a mesma senha"
               value={confirmacao}
               onChange={e => setConfirmacao(e.target.value)}
+              autoComplete="new-password"
               required
             />
           </div>

@@ -1,11 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { apiFetch } from '../api/client.js';
 import { LeadComInteracoes } from '@radar/shared';
-import { formatarMoeda, formatarDataHora, gerarLinkContato } from '../utils/formatters.js';
+import { formatarMoeda, formatarDataHora, formatarStatusLead, gerarLinkContato } from '../utils/formatters.js';
 import { LoadingState, ErrorState } from '../components/FeedbackStates.js';
 import { ModalAcao } from '../components/ModalAcao.js';
 import { ModalEditarLead } from '../components/ModalEditarLead.js';
+import { FeedbackAcaoRapida } from '../components/FeedbackAcaoRapida.js';
+
+type TipoAcaoRapida = 'contato' | 'orcamento' | 'fechou';
 
 export const LeadDetalhesPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -15,6 +18,10 @@ export const LeadDetalhesPage: React.FC = () => {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [modalEditarAberto, setModalEditarAberto] = useState(false);
+  const [acaoEmAndamento, setAcaoEmAndamento] = useState<TipoAcaoRapida | null>(null);
+  const [feedbackAcao, setFeedbackAcao] = useState<{ tipo: 'sucesso' | 'erro' | 'aviso'; mensagem: string } | null>(null);
+  const [acaoRapidaEmAndamento, setAcaoRapidaEmAndamento] = useState(false);
+  const acaoRapidaEmAndamentoRef = useRef(false);
 
   const [modalAcao, setModalAcao] = useState<{
     aberto: boolean;
@@ -24,16 +31,24 @@ export const LeadDetalhesPage: React.FC = () => {
     tipo: 'nota'
   });
 
-  const carregarLead = async () => {
+  const carregarLead = async (silencioso = false): Promise<boolean> => {
     try {
-      setCarregando(true);
-      setErro(null);
+      if (!silencioso) {
+        setCarregando(true);
+        setErro(null);
+      }
       const data = await apiFetch<LeadComInteracoes>(`/leads/${id}`);
       setLead(data);
+      return true;
     } catch (err: any) {
-      setErro(err.message || 'Falha ao carregar detalhes do lead');
+      if (!silencioso) {
+        setErro(err.message || 'Falha ao carregar detalhes do lead');
+      }
+      return false;
     } finally {
-      setCarregando(false);
+      if (!silencioso) {
+        setCarregando(false);
+      }
     }
   };
 
@@ -41,16 +56,44 @@ export const LeadDetalhesPage: React.FC = () => {
     carregarLead();
   }, [id]);
 
-  const handleAcaoRapida = async (tipoAcao: 'contato' | 'orcamento' | 'fechou') => {
-    if (!lead) return;
+  const handleAcaoRapida = async (tipoAcao: TipoAcaoRapida) => {
+    if (!lead || acaoRapidaEmAndamentoRef.current) return;
+    if (tipoAcao === 'fechou' && !window.confirm(`Confirmar que a venda de ${lead.nome} foi fechada?`)) {
+      return;
+    }
+
+    acaoRapidaEmAndamentoRef.current = true;
+    setAcaoRapidaEmAndamento(true);
+    setAcaoEmAndamento(tipoAcao);
+    setFeedbackAcao(null);
+
     try {
       await apiFetch(`/leads/${lead.id}/acoes`, {
         method: 'POST',
         body: JSON.stringify({ tipo: tipoAcao })
       });
-      await carregarLead();
-    } catch (err: any) {
-      alert(`Erro: ${err.message || 'Falha ao executar ação'}`);
+      const atualizado = await carregarLead(true);
+      setFeedbackAcao({
+        tipo: atualizado ? 'sucesso' : 'aviso',
+        mensagem: atualizado
+          ? `Ação registrada para ${lead.nome}.`
+          : `Ação registrada para ${lead.nome}, mas o histórico não foi atualizado. Atualize para conferir.`
+      });
+    } catch {
+      setFeedbackAcao({
+        tipo: 'erro',
+        mensagem: `Não foi possível confirmar se a ação foi registrada para ${lead.nome}. Atualize o histórico antes de tentar novamente.`
+      });
+    } finally {
+      acaoRapidaEmAndamentoRef.current = false;
+      setAcaoRapidaEmAndamento(false);
+      setAcaoEmAndamento(null);
+    }
+  };
+
+  const handleAtualizarAposAcao = async () => {
+    if (await carregarLead(true)) {
+      setFeedbackAcao(null);
     }
   };
 
@@ -98,6 +141,16 @@ export const LeadDetalhesPage: React.FC = () => {
         </Link>
       </div>
 
+      {feedbackAcao && (
+        <FeedbackAcaoRapida
+          tipo={feedbackAcao.tipo}
+          mensagem={feedbackAcao.mensagem}
+          acao={feedbackAcao.tipo !== 'sucesso'
+            ? { rotulo: 'Atualizar histórico', executar: handleAtualizarAposAcao, desabilitada: acaoRapidaEmAndamento }
+            : undefined}
+        />
+      )}
+
       {/* Cartão Principal de Informações */}
       <div style={{
         background: 'var(--card)',
@@ -110,7 +163,7 @@ export const LeadDetalhesPage: React.FC = () => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
             <span className={`badge-status ${lead.status}`} style={{ marginBottom: '10px', display: 'inline-block' }}>
-              Status: {lead.status}
+              Status: {formatarStatusLead(lead.status)}
             </span>
             <h1 style={{ fontSize: '24px', fontWeight: 750, color: 'var(--foreground)', letterSpacing: '-0.02em' }}>{lead.nome}</h1>
             <p style={{ fontSize: '14px', color: 'var(--muted-foreground)', marginTop: '4px' }}>
@@ -137,7 +190,7 @@ export const LeadDetalhesPage: React.FC = () => {
               href={`https://wa.me/${lead.whatsapp.replace(/\D/g, '').length <= 11 ? `55${lead.whatsapp.replace(/\D/g, '')}` : lead.whatsapp.replace(/\D/g, '')}`}
               target="_blank"
               rel="noreferrer"
-              className="btn-acao primary"
+              className="btn-acao contact-whatsapp"
               style={{ padding: '8px 14px' }}
             >
               💬 WhatsApp ({lead.whatsapp})
@@ -149,7 +202,7 @@ export const LeadDetalhesPage: React.FC = () => {
               href={`mailto:${lead.email}`}
               target="_blank"
               rel="noreferrer"
-              className="btn-acao"
+              className="btn-acao contact-email"
               style={{ padding: '8px 14px' }}
             >
               ✉️ E-mail ({lead.email})
@@ -161,7 +214,7 @@ export const LeadDetalhesPage: React.FC = () => {
               href={contatoInfo.href}
               target="_blank"
               rel="noreferrer"
-              className="btn-acao primary"
+              className={`btn-acao ${contatoInfo.tipo === 'whatsapp' ? 'contact-whatsapp' : 'contact-email'}`}
               style={{ padding: '8px 14px' }}
             >
               {contatoInfo.tipo === 'whatsapp' ? '💬 Iniciar WhatsApp' : '✉️ Enviar Mensagem'} ({contatoInfo.label})
@@ -179,18 +232,33 @@ export const LeadDetalhesPage: React.FC = () => {
 
           {lead.status !== 'fechado' && lead.status !== 'perdido' && (
             <>
-              <button className="btn-acao" onClick={() => handleAcaoRapida('contato')}>
-                📞 Registrei contato
+              <button
+                className="btn-acao primary"
+                onClick={() => handleAcaoRapida('contato')}
+                disabled={acaoRapidaEmAndamento}
+                aria-busy={acaoEmAndamento === 'contato'}
+              >
+                {acaoEmAndamento === 'contato' ? 'Registrando...' : '📞 Registrei contato'}
               </button>
               {lead.status === 'novo' && (
-                <button className="btn-acao" onClick={() => handleAcaoRapida('orcamento')}>
-                  📄 Enviei orçamento
+                <button
+                  className="btn-acao"
+                  onClick={() => handleAcaoRapida('orcamento')}
+                  disabled={acaoRapidaEmAndamento}
+                  aria-busy={acaoEmAndamento === 'orcamento'}
+                >
+                  {acaoEmAndamento === 'orcamento' ? 'Registrando...' : '📄 Enviei orçamento'}
                 </button>
               )}
-              <button className="btn-acao success" onClick={() => handleAcaoRapida('fechou')}>
-                ✅ Fechou
+              <button
+                className="btn-acao success"
+                onClick={() => handleAcaoRapida('fechou')}
+                disabled={acaoRapidaEmAndamento}
+                aria-busy={acaoEmAndamento === 'fechou'}
+              >
+                {acaoEmAndamento === 'fechou' ? 'Registrando...' : '✅ Fechou'}
               </button>
-              <button className="btn-acao danger" onClick={() => setModalAcao({ aberto: true, tipo: 'perdeu' })}>
+              <button className="btn-acao danger" onClick={() => setModalAcao({ aberto: true, tipo: 'perdeu' })} disabled={acaoRapidaEmAndamento}>
                 ❌ Perdeu
               </button>
             </>
@@ -225,9 +293,7 @@ export const LeadDetalhesPage: React.FC = () => {
               <div key={it.id} className="timeline-item">
                 <div className="timeline-point" />
                 <div className="timeline-header">
-                  <span className="timeline-tipo" style={{
-                    color: it.tipo === 'orcamento' ? 'var(--warning)' : it.tipo === 'contato' ? 'var(--primary)' : 'var(--text-muted)'
-                  }}>
+                  <span className={`timeline-tipo timeline-tipo-${it.tipo}`}>
                     {it.tipo === 'orcamento' ? '📄 Orçamento' : it.tipo === 'contato' ? '📞 Contato' : it.tipo === 'follow_up' ? '🔄 Follow-up' : '📝 Nota'}
                   </span>
                   <span>{formatarDataHora(it.criado_em)}</span>

@@ -31,11 +31,11 @@ export const PerdasPage: React.FC = () => {
 
   return (
     <div className="container">
-      <div style={{ marginBottom: '16px' }}>
-        <h2 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--foreground)' }}>
+      <div className="page-heading">
+        <h2 className="page-title">
           📉 Motivos de Perda
         </h2>
-        <p style={{ fontSize: '13px', color: 'var(--muted-foreground)' }}>
+        <p className="page-subtitle">
           Entenda por que você não fechou e aprenda com cada oportunidade
         </p>
       </div>
@@ -54,34 +54,25 @@ export const PerdasPage: React.FC = () => {
       {!carregando && !erro && motivos.length > 0 && (
         <div>
           {/* Card Resumo */}
-          <div style={{
-            background: 'var(--card)',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-lg)',
-            padding: '20px',
-            display: 'flex',
-            justifyContent: 'space-around',
-            textAlign: 'center',
-            marginBottom: '20px'
-          }}>
+          <div className="perdas-summary">
             <div>
-              <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>TOTAL DE PERDAS</div>
-              <div style={{ fontSize: '26px', fontWeight: 750, color: 'var(--hot)', marginTop: '4px' }}>
+              <div className="perdas-summary-label">TOTAL DE PERDAS</div>
+              <div className="perdas-summary-value">
                 {totalPerdidos}
               </div>
             </div>
 
-            <div style={{ borderLeft: '1px solid var(--border)' }} />
+            <div className="perdas-summary-divider" />
 
             <div>
-              <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--muted-foreground)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>VALOR TOTAL PERDIDO</div>
-              <div style={{ fontSize: '26px', fontWeight: 750, color: 'var(--hot)', marginTop: '4px' }}>
+              <div className="perdas-summary-label">VALOR TOTAL PERDIDO</div>
+              <div className="perdas-summary-value">
                 {formatarMoeda(valorTotalPerdido)}
               </div>
             </div>
           </div>
 
-          <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '12px' }}>
+          <h3 className="perdas-ranking-title">
             Ranking dos Motivos Mais Frequentes
           </h3>
 
@@ -89,15 +80,15 @@ export const PerdasPage: React.FC = () => {
             <div key={item.motivo} className="perda-item">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <span style={{ fontWeight: 700, color: 'var(--foreground)', fontSize: '15px' }}>
+                  <span className="perda-title">
                     #{index + 1} {item.motivo}
                   </span>
-                  <div style={{ fontSize: '12px', color: 'var(--muted-foreground)', marginTop: '2px' }}>
+                  <div className="perda-meta">
                     {item.quantidade} {item.quantidade === 1 ? 'ocorrência' : 'ocorrências'} · {formatarMoeda(item.valor_total)} deixados na mesa
                   </div>
                 </div>
 
-                <div style={{ fontSize: '16px', fontWeight: 800, color: 'var(--hot)' }}>
+                <div className="perda-percentual">
                   {item.percentual}%
                 </div>
               </div>

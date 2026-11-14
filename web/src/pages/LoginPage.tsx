@@ -32,22 +32,18 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div style={{
+    <div className="auth-screen" style={{
       minHeight: '100vh',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       padding: '16px',
-      background: 'var(--background)'
     }}>
-      <div style={{
-        background: 'var(--card)',
-        border: '1px solid var(--border)',
+      <div className="auth-panel" style={{
         width: '100%',
         maxWidth: '400px',
         padding: '32px 28px',
         borderRadius: 'var(--radius-lg)',
-        boxShadow: '0 4px 24px rgba(37,45,61,0.1)'
       }}>
         <div style={{ textAlign: 'center', marginBottom: '28px' }}>
           <div style={{ display: 'inline-flex', marginBottom: '12px' }}>
@@ -56,8 +52,8 @@ export const LoginPage: React.FC = () => {
               <img src="/favicon.svg" alt="CheckLead" style={{ width: '40px', height: '40px' }} />
             </span>
           </div>
-          <h1 style={{ fontSize: '20px', fontWeight: 750, color: 'var(--foreground)', letterSpacing: '0.08em' }}>CheckLead</h1>
-          <p style={{ fontSize: '13px', color: 'var(--muted-foreground)', marginTop: '4px' }}>
+          <h1 className="auth-title" style={{ fontSize: '20px', fontWeight: 750, letterSpacing: '0.08em' }}>CheckLead</h1>
+          <p className="auth-subtitle" style={{ fontSize: '13px', marginTop: '4px' }}>
             Detector de vazamento de vendas
           </p>
         </div>
@@ -78,13 +74,15 @@ export const LoginPage: React.FC = () => {
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label className="form-label">Sua Senha de Acesso</label>
+            <label className="form-label" htmlFor="login-senha">Sua Senha de Acesso</label>
             <input
+              id="login-senha"
               type="password"
               className="form-input"
               placeholder="Digite sua senha"
               value={senha}
               onChange={e => setSenha(e.target.value)}
+              autoComplete="current-password"
               required
               autoFocus
             />

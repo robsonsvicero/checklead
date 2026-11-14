@@ -63,9 +63,9 @@ export const ModalAcao: React.FC<ModalAcaoProps> = ({
 
   return (
     <div className="modal-overlay" onClick={onFechar}>
-      <div className="modal-content" onClick={e => e.stopPropagation()}>
+      <div className="modal-content" role="dialog" aria-modal="true" aria-labelledby="modal-acao-titulo" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h3 className="modal-title">
+          <h3 className="modal-title" id="modal-acao-titulo">
             {tipo === 'perdeu' ? `❌ Marcar perda: ${leadNome}` : `📝 Adicionar nota: ${leadNome}`}
           </h3>
           <button className="btn-close" onClick={onFechar}>&times;</button>
@@ -80,7 +80,7 @@ export const ModalAcao: React.FC<ModalAcaoProps> = ({
             borderRadius: '6px',
             fontSize: '13px',
             marginBottom: '14px'
-          }}>
+          }} role="alert">
             {erro}
           </div>
         )}
@@ -89,8 +89,9 @@ export const ModalAcao: React.FC<ModalAcaoProps> = ({
           {tipo === 'perdeu' ? (
             <>
               <div className="form-group">
-                <label className="form-label">Qual foi o motivo da perda? *</label>
+                <label className="form-label" htmlFor="acao-motivo-perda">Qual foi o motivo da perda? *</label>
                 <input
+                  id="acao-motivo-perda"
                   type="text"
                   className="form-input"
                   placeholder="Ex: Achou caro, sumiu, fechou com concorrente..."
@@ -102,8 +103,9 @@ export const ModalAcao: React.FC<ModalAcaoProps> = ({
               </div>
 
               <div className="form-group">
-                <label className="form-label">Comentário adicional (opcional)</label>
+                <label className="form-label" htmlFor="acao-comentario">Comentário adicional (opcional)</label>
                 <textarea
+                  id="acao-comentario"
                   className="form-textarea"
                   rows={3}
                   placeholder="Detalhes ou aprendizado sobre essa oportunidade..."
@@ -114,8 +116,9 @@ export const ModalAcao: React.FC<ModalAcaoProps> = ({
             </>
           ) : (
             <div className="form-group">
-              <label className="form-label">Anotação rápida *</label>
+              <label className="form-label" htmlFor="acao-nota">Anotação rápida *</label>
               <textarea
+                id="acao-nota"
                 className="form-textarea"
                 rows={4}
                 placeholder="Ex: Cliente pediu para ligar quinta-feira às 14h..."
