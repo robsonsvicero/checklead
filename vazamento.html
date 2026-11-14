@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vazamento de Vendas</title>
+<style>
+  body{font-family:system-ui,sans-serif;max-width:760px;margin:20px auto;padding:0 12px;color:#222}
+  h2{margin-top:28px}
+  form{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+  input,button{padding:8px;font-size:14px}
+  form button{grid-column:span 2}
+  .card{border:1px solid #ddd;border-radius:8px;padding:10px;margin:8px 0}
+  .alerta{background:#fff3cd;border-color:#ffe08a}
+  .metricas{display:flex;gap:10px;flex-wrap:wrap}
+  .metricas div{flex:1;min-width:150px;background:#f4f6f8;border-radius:8px;padding:10px}
+  .metricas b{display:block;font-size:20px}
+  .acoes button{margin:4px 4px 0 0}
+  small{color:#666}
+</style>
+</head>
+<body>
+<h1>Onde estou perdendo vendas?</h1>
+
+<div class="metricas" id="metricas"></div>
+
+<h2>⚠️ Agir agora</h2>
+<div id="alertas"></div>
+
+<h2>Novo lead</h2>
+<form id="form">
+  <input name="nome" placeholder="Nome" required>
+  <input name="contato" placeholder="WhatsApp / e-mail">
+  <input name="servico" placeholder="Serviço desejado">
+  <input name="valor" type="number" placeholder="Valor estimado (R$)">
+  <button>Adicionar</button>
+</form>
+
+<h2>Todos os leads</h2>
+<div id="lista"></div>
+
+<script>
+const REGRAS = { semRespostaH: 24, semFollowUpD: 3 }; // ajuste conforme sua realidade
+const H = 3600000, D = 24 * H;
+let leads = JSON.parse(localStorage.getItem('leads') || '[]');
+
+const salvar = () => { localStorage.setItem('leads', JSON.stringify(leads)); render(); };
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtData = t => new Date(t).toLocaleString('pt-BR', {dateStyle:'short', timeStyle:'short'});
+const brl = n => (n || 0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+const abertos = () => leads.filter(l => l.status === 'novo' || l.status === 'orcamento');
+
+function criar(e) {
+  e.preventDefault();
+  const f = new FormData(e.target);
+  leads.push({
+    id: Date.now(), nome: f.get('nome'), contato: f.get('contato'),
+    servico: f.get('servico'), valor: Number(f.get('valor')) || 0,
+    criadoEm: Date.now(), ultimoContatoEm: null, orcamentoEm: null,
+    status: 'novo', motivoPerda: ''
+  });
+  e.target.reset();
+  salvar();
+}
+
+function agir(id, acao) {
+  const l = leads.find(x => x.id === id);
+  const agora = Date.now();
+  if (acao === 'contato') l.ultimoContatoEm = agora;
+  if (acao === 'orcamento') { l.status = 'orcamento'; l.orcamentoEm = agora; l.ultimoContatoEm = agora; }
+  if (acao === 'fechou') l.status = 'fechado';
+  if (acao === 'perdeu') { l.status = 'perdido'; l.motivoPerda = prompt('Motivo da perda?') || ''; }
+  if (acao === 'excluir' && confirm('Excluir lead?')) leads = leads.filter(x => x.id !== id);
+  salvar();
+}
+
+function alertasDe(l, agora) {
+  const out = [];
+  if (l.status === 'novo' && !l.ultimoContatoEm && agora - l.criadoEm > REGRAS.semRespostaH * H)
+    out.push(`sem resposta há ${Math.floor((agora - l.criadoEm) / H)}h`);
+  if (l.status === 'orcamento' && agora - l.ultimoContatoEm > REGRAS.semFollowUpD * D)
+    out.push(`orçamento sem follow-up há ${Math.floor((agora - l.ultimoContatoEm) / D)} dias`);
+  return out;
+}
+
+function botoes(l) {
+  const b = (a, t) => `<button onclick="agir(${l.id},'${a}')">${t}</button>`;
+  if (l.status === 'fechado' || l.status === 'perdido') return b('excluir', 'Excluir');
+  return b('contato', 'Falei com ele') + b('orcamento', 'Enviei orçamento') + b('fechou', 'Fechou ✅') + b('perdeu', 'Perdeu ❌');
+}
+
+function render() {
+  const agora = Date.now();
+
+  // métricas
+  const fechados = leads.filter(l => l.status === 'fechado').length;
+  const decididos = fechados + leads.filter(l => l.status === 'perdido').length;
+  const comOrc = leads.filter(l => l.orcamentoEm);
+  const tempoMedio = comOrc.length
+    ? comOrc.reduce((s, l) => s + (l.orcamentoEm - l.criadoEm), 0) / comOrc.length / H : null;
+  const emAberto = abertos().reduce((s, l) => s + l.valor, 0);
+  document.getElementById('metricas').innerHTML = `
+    <div>Taxa de fechamento<b>${decididos ? Math.round(fechados / decididos * 100) + '%' : '—'}</b></div>
+    <div>Tempo médio até orçamento<b>${tempoMedio !== null ? tempoMedio.toFixed(1) + 'h' : '—'}</b></div>
+    <div>Valor em aberto<b>${brl(emAberto)}</b></div>`;
+
+  // alertas
+  const itens = abertos().map(l => ({ l, a: alertasDe(l, agora) })).filter(x => x.a.length);
+  document.getElementById('alertas').innerHTML = itens.length
+    ? itens.map(({l, a}) => `<div class="card alerta"><b>${esc(l.nome)}</b> — ${esc(l.servico)}<br>
+        ${a.join(' · ')}<br><small>${esc(l.contato)}</small>
+        <div class="acoes">${botoes(l)}</div></div>`).join('')
+    : '<small>Nada vazando agora. 👍</small>';
+
+  // lista
+  document.getElementById('lista').innerHTML = leads.slice().reverse().map(l => `
+    <div class="card"><b>${esc(l.nome)}</b> — ${esc(l.servico)} · ${brl(l.valor)}
+      <small>[${l.status}]</small><br>
+      <small>Entrou: ${fmtData(l.criadoEm)}${l.motivoPerda ? ' · Perdeu por: ' + esc(l.motivoPerda) : ''}</small>
+      <div class="acoes">${botoes(l)}</div></div>`).join('') || '<small>Nenhum lead ainda.</small>';
+}
+
+document.getElementById('form').addEventListener('submit', criar);
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,795 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#080d17">
+    <title>Design system — CheckLead</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <style>
+    :root {
+      color-scheme: dark;
+      --background: hsl(222 47% 6%);
+      --foreground: hsl(210 40% 96%);
+      --card: hsl(222 40% 9%);
+      --popover: hsl(222 44% 8%);
+      --primary: hsl(187 95% 52%);
+      --primary-foreground: hsl(222 47% 6%);
+      --secondary: hsl(222 30% 14%);
+      --muted: hsl(222 30% 13%);
+      --muted-foreground: hsl(215 20% 60%);
+      --accent: hsl(187 80% 18%);
+      --accent-foreground: hsl(187 95% 60%);
+      --destructive: hsl(0 84% 60%);
+      --success: hsl(160 70% 45%);
+      --hot: hsl(12 85% 58%);
+      --warm: hsl(38 92% 50%);
+      --cold: hsl(215 25% 45%);
+      --border: hsl(222 30% 16%);
+      --input: hsl(222 30% 16%);
+      --ring: var(--primary);
+      --sidebar: hsl(222 50% 5%);
+      --chart-1: hsl(187 95% 52%);
+      --chart-2: hsl(160 70% 45%);
+      --chart-3: hsl(38 92% 50%);
+      --chart-4: hsl(12 85% 58%);
+      --chart-5: hsl(280 65% 60%);
+      font-family: Inter, "Segoe UI", sans-serif;
+      font-synthesis: none;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    html {
+      scroll-behavior: smooth;
+    }
+    body {
+      margin: 0;
+      min-width: 320px;
+      color: var(--foreground);
+      background: var(--background);
+    }
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+    button,
+    input {
+      font: inherit;
+    }
+    .shell {
+      display: grid;
+      grid-template-columns: 248px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+    aside {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      padding: 20px 14px;
+      background: var(--sidebar);
+      border-right: 1px solid hsl(222 30% 14%);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 4px 10px 22px;
+      border-bottom: 1px solid hsl(222 30% 14%);
+    }
+    .brand-mark {
+      width: 34px;
+      height: 34px;
+      position: relative;
+      display: grid;
+      place-items: center;
+    }
+    .brand-mark img {
+      width: 29px;
+      height: 29px;
+      animation: radar-sweep 4s linear infinite;
+      transform-origin: center;
+    }
+    .pulse-ring {
+      position: absolute;
+      inset: 4px;
+      border: 1px solid hsl(187 95% 52% / .7);
+      border-radius: 50%;
+      animation: pulse-ring 2s ease-out infinite;
+    }
+    .brand-name {
+      font-size: 12px;
+      font-weight: 750;
+      letter-spacing: .13em;
+    }
+    .brand-caption {
+      margin-top: 3px;
+      color: var(--muted-foreground);
+      font-size: 11px;
+    }
+    nav {
+      display: grid;
+      gap: 4px;
+      padding-top: 20px;
+    }
+    nav a {
+      padding: 9px 11px;
+      border-radius: 8px;
+      color: hsl(210 40% 90%);
+      font-size: 13px;
+    }
+    nav a.active {
+      color: var(--accent-foreground);
+      background: hsl(222 30% 12%);
+    }
+    nav a:hover {
+      background: hsl(222 30% 12%);
+    }
+    main {
+      max-width: 1200px;
+      width: 100%;
+      padding: 52px clamp(24px, 5vw, 72px) 80px;
+      margin: 0 auto;
+    }
+    .eyebrow {
+      color: var(--primary);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+    h1 {
+      margin: 12px 0 12px;
+      font-size: clamp(32px, 5vw, 48px);
+      line-height: 1.08;
+      letter-spacing: -.04em;
+    }
+    h2 {
+      margin: 0;
+      font-size: 20px;
+      letter-spacing: -.02em;
+    }
+    h3 {
+      margin: 0;
+      font-size: 14px;
+    }
+    p {
+      color: var(--muted-foreground);
+      line-height: 1.65;
+    }
+    .intro {
+      max-width: 690px;
+      margin: 0;
+      font-size: 15px;
+    }
+    .section {
+      margin-top: 58px;
+      scroll-margin-top: 28px;
+    }
+    .section-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+    .section-head p {
+      margin: 6px 0 0;
+      font-size: 13px;
+    }
+    .panel {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--card);
+    }
+    .hero {
+      display: grid;
+      grid-template-columns: 1.4fr .8fr;
+      gap: 16px;
+      margin-top: 32px;
+    }
+    .hero-copy,
+    .hero-logo {
+      padding: 24px;
+    }
+    .hero-copy h2 {
+      margin-bottom: 8px;
+    }
+    .hero-copy p {
+      margin: 0;
+      font-size: 13px;
+    }
+    .hero-logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      background: radial-gradient(circle at 30% 50%, hsl(187 80% 18% / .36),
+        transparent 65%), var(--card);
+    }
+    .hero-logo .brand-mark {
+      width: 56px;
+      height: 56px;
+    }
+    .hero-logo .brand-mark img {
+      width: 48px;
+      height: 48px;
+    }
+    .hero-logo .pulse-ring {
+      inset: 5px;
+    }
+    .hero-logo strong {
+      font-size: 13px;
+      letter-spacing: .13em;
+    }
+    .hero-logo small {
+      display: block;
+      margin-top: 5px;
+      color: var(--muted-foreground);
+    }
+    .swatches {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .swatch {
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      background: var(--card);
+    }
+    .swatch-color {
+      height: 58px;
+      border-bottom: 1px solid var(--border);
+    }
+    .swatch-info {
+      padding: 10px 11px 12px;
+    }
+    .swatch-info strong {
+      display: block;
+      font-size: 12px;
+    }
+    .swatch-info code,
+    .token {
+      color: var(--muted-foreground);
+      font-size: 10px;
+    }
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .card-pad {
+      padding: 20px;
+    }
+    .card-pad > p {
+      margin: 7px 0 16px;
+      font-size: 12px;
+    }
+    .type-sample {
+      padding: 14px 0;
+      border-top: 1px solid var(--border);
+    }
+    .type-sample h1,
+    .type-sample h2,
+    .type-sample h3,
+    .type-sample p {
+      margin: 0;
+    }
+    .type-sample p {
+      font-size: 13px;
+      margin-top: 5px;
+    }
+    .type-meta {
+      margin-top: 7px;
+      color: var(--muted-foreground);
+      font: 10px ui-monospace, monospace;
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 9px;
+    }
+    .btn {
+      display: inline-flex;
+      min-height: 38px;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 0 14px;
+      border: 1px solid transparent;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 600;
+      transition: background .18s, border-color .18s, transform .18s;
+      cursor: pointer;
+    }
+    .btn:hover {
+      transform: translateY(-1px);
+    }
+    .btn-primary {
+      color: var(--primary-foreground);
+      background: var(--primary);
+    }
+    .btn-secondary {
+      color: var(--foreground);
+      background: var(--secondary);
+    }
+    .btn-outline {
+      color: var(--foreground);
+      background: transparent;
+      border-color: var(--input);
+    }
+    .btn-ghost {
+      color: var(--foreground);
+      background: transparent;
+    }
+    .btn-danger {
+      color: white;
+      background: var(--destructive);
+    }
+    .btn:focus-visible,
+    .field:focus-visible {
+      outline: 2px solid var(--ring);
+      outline-offset: 2px;
+    }
+    .badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 9px;
+      border: 1px solid transparent;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 650;
+    }
+    .b-default {
+      color: var(--primary-foreground);
+      background: var(--primary);
+    }
+    .b-success {
+      color: hsl(160 70% 70%);
+      background: hsl(160 70% 45% / .1);
+      border-color: hsl(160 70% 45% / .3);
+    }
+    .b-warm {
+      color: hsl(38 95% 68%);
+      background: hsl(38 92% 50% / .1);
+      border-color: hsl(38 92% 50% / .3);
+    }
+    .b-hot {
+      color: var(--hot);
+      background: hsl(12 85% 58% / .1);
+      border-color: hsl(12 85% 58% / .3);
+    }
+    .b-cold {
+      color: var(--muted-foreground);
+      background: hsl(215 25% 45% / .15);
+      border-color: hsl(215 25% 45% / .5);
+    }
+    .b-danger {
+      color: var(--destructive);
+      background: hsl(0 84% 60% / .1);
+      border-color: hsl(0 84% 60% / .3);
+    }
+    .field {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--input);
+      border-radius: 8px;
+      color: var(--foreground);
+      background: var(--muted);
+      font-size: 12px;
+    }
+    .field::placeholder {
+      color: var(--muted-foreground);
+    }
+    .field-label {
+      display: block;
+      margin-bottom: 7px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .mini-stat {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    .stat-number {
+      margin-top: 12px;
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -.04em;
+    }
+    .stat-change {
+      color: hsl(160 70% 70%);
+      font-size: 11px;
+    }
+    .bars {
+      display: flex;
+      align-items: end;
+      height: 115px;
+      gap: 10px;
+      padding-top: 12px;
+    }
+    .bar {
+      flex: 1;
+      min-width: 8px;
+      border-radius: 5px 5px 2px 2px;
+      background: linear-gradient(180deg, var(--primary), hsl(187 95% 52% / .22));
+    }
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .legend span {
+      color: var(--muted-foreground);
+      font-size: 10px;
+    }
+    .dot {
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      margin-right: 5px;
+      border-radius: 50%;
+    }
+    .spacing {
+      display: flex;
+      align-items: end;
+      gap: 16px;
+      min-height: 105px;
+    }
+    .space-item {
+      text-align: center;
+      color: var(--muted-foreground);
+      font-size: 10px;
+    }
+    .space-bar {
+      margin: 0 auto 8px;
+      height: 8px;
+      border-radius: 4px;
+      background: var(--primary);
+    }
+    .motion-demo {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      color: var(--muted-foreground);
+      font-size: 12px;
+    }
+    .motion-demo .brand-mark {
+      background: var(--muted);
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+    }
+    .motion-demo .brand-mark img {
+      width: 32px;
+      height: 32px;
+    }
+    .motion-demo .pulse-ring {
+      inset: 8px;
+    }
+    .note {
+      margin-top: 12px;
+      font-size: 11px;
+    }
+    footer {
+      margin-top: 64px;
+      padding-top: 18px;
+      border-top: 1px solid var(--border);
+      color: var(--muted-foreground);
+      font-size: 11px;
+    }
+    @keyframes radar-sweep {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+    @keyframes pulse-ring {
+      0% {
+        opacity: .65;
+        transform: scale(.8);
+      }
+      100% {
+        opacity: 0;
+        transform: scale(2.4);
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+      }
+    }
+    @media (max-width: 880px) {
+      .shell {
+        grid-template-columns: 1fr;
+      }
+      aside {
+        display: none;
+      }
+      main {
+        padding-top: 36px;
+      }
+    }
+    @media (max-width: 600px) {
+      .hero,
+      .split {
+        grid-template-columns: 1fr;
+      }
+      .swatches {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .section {
+        margin-top: 42px;
+      }
+      .hero-logo {
+        min-height: 115px;
+      }
+    }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <aside>
+        <a class="brand" href="#top" aria-label="CheckLead design system">
+          <span
+            class="brand-mark"><span class="pulse-ring"></span><img src="/favicon.svg" alt=""></span>
+          <span><span class="brand-name">CheckLead</span><span class="brand-caption">AI Prospecting</span></span>
+        </a>
+        <nav aria-label="Seções do design system">
+        <a class="active" href="#overview">Visão geral</a><a href="#colors">Cores</a><a href="#type">Tipografia</a>
+        <a href="#components">Componentes</a><a href="#data">Dados e gráficos</a><a href="#motion">Movimento</a>
+      </nav>
+      </aside>
+      <main id="top">
+        <div id="overview" class="eyebrow">Fundamentos da interface</div>
+        <h1>Design system</h1>
+        <p
+          class="intro">Uma interface de prospecção B2B feita para manter o foco: sinais em ciano elétrico destacam a próxima ação, superfícies azul petróleo deixam o espaço confortável e cores quentes ajudam a priorizar leads.</p>
+        <div class="hero">
+          <article class="panel hero-copy">
+            <h2>Dark Radar</h2>
+            <p>O tema escuro é a base da experiência. Use os tokens semânticos para manter contraste e consistência em telas, estados e visualizações.</p>
+          </article>
+          <article
+            class="panel hero-logo"><span class="brand-mark"><span class="pulse-ring"></span><img src="/favicon.svg" alt=""></span><span><strong>CheckLead</strong><small>AI Prospecting</small></span></article>
+        </div>
+
+        <section class="section" id="colors">
+          <div class="section-head">
+            <div>
+              <h2>Paleta e tokens</h2>
+              <p>As cores são definidas em HSL e aplicadas por função.</p>
+            </div>
+          </div>
+          <div class="swatches">
+            <div class="swatch">
+              <div class="swatch-color"
+                style="background:var(--background)"></div>
+              <div
+                class="swatch-info"><strong>Canvas</strong><code>background · 222 47% 6%</code></div>
+            </div>
+            <div class="swatch">
+              <div class="swatch-color" style="background:var(--card)"></div>
+              <div
+                class="swatch-info"><strong>Card</strong><code>card · 222 40% 9%</code></div>
+            </div>
+            <div class="swatch">
+              <div class="swatch-color" style="background:var(--popover)"></div>
+              <div
+                class="swatch-info"><strong>Popover</strong><code>popover · 222 44% 8%</code></div>
+            </div>
+            <div class="swatch">
+              <div class="swatch-color"
+                style="background:var(--secondary)"></div>
+              <div
+                class="swatch-info"><strong>Secondary</strong><code>secondary · 222 30% 14%</code></div>
+            </div>
+            <div class="swatch">
+              <div class="swatch-color" style="background:var(--primary)"></div>
+              <div
+                class="swatch-info"><strong>Primary / ação</strong><code>primary · 187 95% 52%</code></div>
+            </div>
+            <div class="swatch">
+              <div class="swatch-color" style="background:var(--accent)"></div>
+              <div
+                class="swatch-info"><strong>Accent</strong><code>accent · 187 80% 18%</code></div>
+            </div>
+            <div class="swatch">
+              <div class="swatch-color"
+                style="background:var(--muted-foreground)"></div>
+              <div
+                class="swatch-info"><strong>Texto secundário</strong><code>muted-foreground · 215 20% 60%</code></div>
+            </div>
+            <div class="swatch">
+              <div class="swatch-color" style="background:var(--border)"></div>
+              <div
+                class="swatch-info"><strong>Border</strong><code>border · 222 30% 16%</code></div>
+            </div>
+            <div class="swatch">
+              <div class="swatch-color" style="background:var(--success)"></div>
+              <div
+                class="swatch-info"><strong>Success</strong><code>success · 160 70% 45%</code></div>
+            </div>
+            <div class="swatch">
+              <div class="swatch-color" style="background:var(--warm)"></div>
+              <div
+                class="swatch-info"><strong>Warm / warning</strong><code>warm · 38 92% 50%</code></div>
+            </div>
+            <div class="swatch">
+              <div class="swatch-color" style="background:var(--hot)"></div>
+              <div
+                class="swatch-info"><strong>Hot / destructive</strong><code>hot · 12 85% 58%</code></div>
+            </div>
+            <div class="swatch">
+              <div class="swatch-color" style="background:var(--cold)"></div>
+              <div
+                class="swatch-info"><strong>Cold</strong><code>cold · 215 25% 45%</code></div>
+            </div>
+          </div>
+          <div class="section" style="margin-top:16px">
+            <div class="panel card-pad">
+              <h3>Séries de gráfico</h3>
+              <p>Cores de dados seguem a ordem definida no tema.</p>
+              <div class="badges">
+          <span class="badge" style="background:var(--chart-1);color:var(--primary-foreground)">Chart 1 · Ciano</span><span class="badge" style="background:var(--chart-2);color:#061512">Chart 2 · Verde</span><span class="badge" style="background:var(--chart-3);color:#1b1403">Chart 3 · Âmbar</span><span class="badge" style="background:var(--chart-4);color:#1b0906">Chart 4 · Laranja</span><span class="badge" style="background:var(--chart-5);color:#fff">Chart 5 · Roxo</span>
+        </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" id="type">
+          <div class="section-head">
+            <div>
+              <h2>Tipografia</h2>
+              <p>Inter com fallback para Segoe UI e sans-serif.</p>
+            </div>
+          </div>
+          <div class="panel card-pad">
+            <div class="type-sample">
+              <h1 style="font-size:30px">Radar de oportunidades</h1>
+              <p>Heading principal · 30 px · peso 700</p>
+              <div class="type-meta">letter-spacing: -0.04em</div>
+            </div>
+            <div class="type-sample">
+              <h2>Empresas para priorizar</h2>
+              <p>Título de seção · 20 px · peso 600</p>
+            </div>
+            <div class="type-sample">
+              <h3>Empresa em crescimento</h3>
+              <p>Título de card · 14 px · peso 600</p>
+            </div>
+            <div class="type-sample">
+              <p
+                style="margin:0;color:var(--foreground)">Encontre empresas com sinais claros de intenção e transforme pesquisa em conversas comerciais.</p>
+              <div class="type-meta">Corpo · 14 px · line-height: 1.65</div>
+            </div>
+            <div class="type-sample">
+              <p
+                style="margin:0;font-size:12px">Atualizado há 12 minutos · Texto auxiliar e metadados</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" id="components">
+          <div class="section-head">
+            <div>
+              <h2>Componentes</h2>
+              <p>Controles com foco visível e estados semânticos.</p>
+            </div>
+          </div>
+          <div class="split">
+            <article class="panel card-pad">
+              <h3>Botões</h3>
+              <p>Use primary para a ação principal de cada área.</p>
+              <div
+                class="controls"><button class="btn btn-primary">＋ Novo lead</button><button class="btn btn-secondary">Secundário</button><button class="btn btn-outline">Outline</button><button class="btn btn-ghost">Ghost</button><button class="btn btn-danger">Excluir</button></div>
+            </article>
+            <article class="panel card-pad">
+              <h3>Badges e estados</h3>
+              <p>Score de lead, sucesso e alertas permanecem distinguíveis.</p>
+              <div
+                class="badges"><span class="badge b-default">Novo</span><span class="badge b-success">● Qualificado</span><span class="badge b-hot">Hot · 92</span><span class="badge b-warm">Warm · 68</span><span class="badge b-cold">Cold · 31</span><span class="badge b-danger">Falha</span></div>
+            </article>
+            <article
+              class="panel card-pad"><h3>Campo de entrada</h3><p>Fundo muted, borda discreta e realce ciano no foco.</p><label class="field-label" for="search">Buscar empresas ou leads</label><input class="field" id="search" placeholder="Ex.: empresas SaaS em São Paulo"></article>
+            <article class="panel card-pad">
+              <h3>Cartão de métrica</h3>
+              <p>Resumo numérico com mudança contextual.</p>
+              <div
+                class="mini-stat"><span class="token">LEADS QUALIFICADOS</span><span class="badge b-success">+12,8%</span></div>
+              <div class="stat-number">1.284</div>
+              <div class="token">em relação ao mês anterior</div>
+            </article>
+          </div>
+        </section>
+
+        <section class="section" id="data">
+          <div class="section-head">
+            <div>
+              <h2>Dados e gráficos</h2>
+              <p>Dados usam cor, rótulo e contexto para comunicar prioridade.</p>
+            </div>
+          </div>
+          <div class="split">
+            <article class="panel card-pad">
+              <div
+                class="mini-stat"><h3>Leads encontrados</h3><span class="badge b-success">+18,4%</span></div>
+              <div class="bars"
+                aria-label="Gráfico demonstrativo"><i class="bar" style="height:42%"></i><i class="bar" style="height:60%"></i><i class="bar" style="height:48%"></i><i class="bar" style="height:78%"></i><i class="bar" style="height:65%"></i><i class="bar" style="height:92%"></i><i class="bar" style="height:72%"></i><i class="bar" style="height:100%"></i></div>
+              <div
+                class="legend"><span><i class="dot" style="background:var(--chart-1)"></i>Novos leads</span><span><i class="dot" style="background:var(--chart-2)"></i>Qualificados</span><span><i class="dot" style="background:var(--chart-3)"></i>Em contato</span></div>
+            </article>
+            <article class="panel card-pad">
+              <h3>Prioridade do lead</h3>
+              <p>O status aparece em badge e não depende apenas da cor.</p>
+              <div style="display:grid;gap:15px;margin-top:20px">
+                <div
+                  class="mini-stat"><span>Acme Tecnologia</span><span class="badge b-hot">Hot · 92</span></div>
+                <div
+                  class="mini-stat"><span>Nuvem Sistemas</span><span class="badge b-warm">Warm · 68</span></div>
+                <div
+                  class="mini-stat"><span>Órbita Serviços</span><span class="badge b-cold">Cold · 31</span></div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="section" id="motion">
+          <div class="section-head">
+            <div>
+              <h2>Movimento e marca</h2>
+              <p>O ícone do radar gira enquanto o anel pulsa em ciclos suaves.</p>
+            </div>
+          </div>
+          <div class="panel card-pad">
+            <div
+              class="motion-demo"><span class="brand-mark"><span class="pulse-ring"></span><img src="/favicon.svg" alt=""></span><span><strong style="display:block;color:var(--foreground)">Logo animado</strong><span>Varredura: 4 s linear · anel: 2 s ease-out</span></span></div>
+            <p
+              class="note">A animação respeita <code>prefers-reduced-motion</code>; movimento é removido quando essa preferência está ativa.</p>
+          </div>
+          <div class="split" style="margin-top:14px">
+            <article class="panel card-pad">
+              <h3>Escala de espaçamento</h3>
+              <p>Incrementos regulares deixam o layout previsível.</p>
+              <div class="spacing">
+                <div
+                  class="space-item"><div class="space-bar" style="width:8px"></div>8</div>
+                <div
+                  class="space-item"><div class="space-bar" style="width:16px"></div>16</div>
+                <div
+                  class="space-item"><div class="space-bar" style="width:24px"></div>24</div>
+                <div
+                  class="space-item"><div class="space-bar" style="width:32px"></div>32</div>
+                <div
+                  class="space-item"><div class="space-bar" style="width:48px"></div>48</div>
+              </div>
+            </article>
+            <article class="panel card-pad">
+              <h3>Forma e contorno</h3>
+              <p>Superfícies compactas, separadas por bordas de baixo contraste.</p>
+              <div
+                class="controls"><span class="badge b-cold">Pílula · 999 px</span><span class="btn btn-outline">Botão · 7 px</span><span class="panel" style="padding:9px 12px;border-radius:14px;font-size:11px">Card · 14 px</span></div>
+            </article>
+          </div>
+        </section>
+        <footer>CheckLead · Design system · Tema Dark Radar</footer>
+      </main>
+    </div>
+  </body>
+</html>
