@@ -26,7 +26,7 @@ export const Header: React.FC<HeaderProps> = ({ totalAlertas = 0 }) => {
             <img src="/favicon.svg" alt="CheckLead" />
           </span>
           <span>
-            <span className="brand-title">CheckLead</span>
+            <span className="brand-title">CheckLEAD</span>
             <span className="brand-subtitle">Detector de Vazamento</span>
           </span>
           {totalAlertas > 0 && (
@@ -49,8 +49,8 @@ export const Header: React.FC<HeaderProps> = ({ totalAlertas = 0 }) => {
               onClick={handleLogout}
               style={{
                 background: 'transparent',
-                border: '1px solid #334155',
-                color: '#94a3b8',
+                border: '1px solid var(--line)',
+                color: 'var(--muted)',
                 borderRadius: '6px',
                 padding: '6px 10px',
                 fontSize: '13px',

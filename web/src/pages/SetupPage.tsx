@@ -52,7 +52,7 @@ export const SetupPage: React.FC = () => {
         maxWidth: '440px',
         padding: '32px 28px',
         borderRadius: 'var(--radius-lg)',
-        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)'
+        boxShadow: '0 4px 24px rgba(37,45,61,0.1)'
       }}>
         <div style={{ textAlign: 'center', marginBottom: '28px' }}>
           <div style={{ display: 'inline-flex', marginBottom: '12px' }}>

@@ -20,7 +20,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ totalAlertas = 0 }) => {
             right: '16px',
             width: '8px',
             height: '8px',
-            backgroundColor: '#ef4444',
+            backgroundColor: 'var(--danger)',
             borderRadius: '50%'
           }} />
         )}

@@ -27,12 +27,12 @@ export const ErrorState: React.FC<{
   detalhes?: string[];
   onTentarNovamente?: () => void;
 }> = ({ mensagem, detalhes, onTentarNovamente }) => (
-  <div className="state-container" style={{ borderColor: 'hsl(0 84% 60% / 0.3)', background: 'hsl(0 84% 60% / 0.08)' }}>
+  <div className="state-container" style={{ borderColor: 'rgba(216,112,104,0.3)', background: 'var(--danger-soft)' }}>
     <div style={{ fontSize: '32px', marginBottom: '8px' }}>⚠️</div>
     <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--destructive)', marginBottom: '4px' }}>
       Algo deu errado
     </h3>
-    <p style={{ color: 'hsl(0 84% 75%)', fontSize: '13px', marginBottom: '12px' }}>{mensagem}</p>
+    <p style={{ color: 'var(--danger)', fontSize: '13px', marginBottom: '12px' }}>{mensagem}</p>
     {detalhes && detalhes.length > 0 && (
       <ul style={{ textAlign: 'left', margin: '0 auto 14px', maxWidth: '350px', fontSize: '13px', color: 'var(--destructive)' }}>
         {detalhes.map((d, i) => (

@@ -105,7 +105,7 @@ export const LeadDetalhesPage: React.FC = () => {
         borderRadius: 'var(--radius-lg)',
         padding: '22px',
         marginBottom: '20px',
-        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
+        boxShadow: 'var(--shadow-card)'
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
@@ -226,7 +226,7 @@ export const LeadDetalhesPage: React.FC = () => {
                 <div className="timeline-point" />
                 <div className="timeline-header">
                   <span className="timeline-tipo" style={{
-                    color: it.tipo === 'orcamento' ? '#b45309' : it.tipo === 'contato' ? 'var(--primary)' : 'var(--text-muted)'
+                    color: it.tipo === 'orcamento' ? 'var(--warning)' : it.tipo === 'contato' ? 'var(--primary)' : 'var(--text-muted)'
                   }}>
                     {it.tipo === 'orcamento' ? '📄 Orçamento' : it.tipo === 'contato' ? '📞 Contato' : it.tipo === 'follow_up' ? '🔄 Follow-up' : '📝 Nota'}
                   </span>
