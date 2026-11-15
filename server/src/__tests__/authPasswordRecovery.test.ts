@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { CompleteInvitationSchema } from '@radar/shared';
 
 const { mockAuth } = vi.hoisted(() => ({
   mockAuth: {
@@ -65,6 +66,14 @@ describe('Supabase password recovery', () => {
 
   afterEach(() => {
     vi.unstubAllEnvs();
+  });
+
+  it('accepts a non-empty Supabase refresh token without an arbitrary length threshold', () => {
+    expect(CompleteInvitationSchema.parse({
+      accessToken: 'a'.repeat(20),
+      refreshToken: 'short',
+      novaSenha: 'new-password'
+    }).refreshToken).toBe('short');
   });
 
   it('sends a reset email with the configured login redirect', async () => {

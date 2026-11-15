@@ -94,7 +94,7 @@ export const InviteEmailSchema = z.object({
 
 export const CompleteInvitationSchema = z.object({
   accessToken: z.string().min(20),
-  refreshToken: z.string().min(20),
+  refreshToken: z.string().min(1),
   novaSenha: z.string().min(8, 'A senha deve ter pelo menos 8 caracteres')
 });
 
