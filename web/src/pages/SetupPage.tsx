@@ -67,10 +67,10 @@ export const SetupPage: React.FC = () => {
           <div style={{ display: 'inline-flex', marginBottom: '12px' }}>
             <span className="brand-mark" style={{ width: '48px', height: '48px' }}>
               <span className="pulse-ring"></span>
-              <img src="/favicon.svg" alt="CheckLead" style={{ width: '40px', height: '40px' }} />
+              <img src="/favicon.svg" alt="CheckLEAD" style={{ width: '40px', height: '40px' }} />
             </span>
           </div>
-          <h1 className="auth-title" style={{ fontSize: '20px', fontWeight: 750, letterSpacing: '0.04em' }}>CheckLead</h1>
+          <h1 className="auth-title" style={{ fontSize: '20px', fontWeight: 750, letterSpacing: '0.04em' }}>CheckLEAD</h1>
           <p className="auth-subtitle" style={{ fontSize: '13px', marginTop: '4px' }}>
             Defina uma senha mestre para proteger seus dados locais.
           </p>

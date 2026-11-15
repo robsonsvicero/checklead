@@ -16,6 +16,7 @@ import {
   changeSupabasePassword,
   clearSessionCookies,
   completeInvitation,
+  completePasswordRecovery,
   generateToken,
   getAuthenticatedSession,
   getSessionTokens,
@@ -122,6 +123,26 @@ authRouter.post('/accept-invitation', asyncHandler(async (req, res) => {
   const session = await completeInvitation(body.accessToken, body.refreshToken, body.novaSenha);
   if (session.session) setSessionCookies(res, session.session);
   res.json({ ok: true, user: session.user });
+}));
+
+authRouter.post('/complete-password-recovery', asyncHandler(async (req, res) => {
+  if (getDatabaseProvider() !== 'supabase') {
+    res.status(404).json({ error: 'A recuperação de senha está disponível somente quando o Supabase está ativo.' });
+    return;
+  }
+
+  const body = CompleteInvitationSchema.parse(req.body);
+  try {
+    const session = await completePasswordRecovery(body.accessToken, body.refreshToken, body.novaSenha);
+    if (session.session) setSessionCookies(res, session.session);
+    res.json({ ok: true, user: session.user });
+  } catch (error) {
+    if (error instanceof Error && error.message === 'O link de redefinição expirou ou não é válido. Solicite um novo link.') {
+      res.status(400).json({ error: error.message });
+      return;
+    }
+    throw error;
+  }
 }));
 
 authRouter.post('/logout', (req, res) => {

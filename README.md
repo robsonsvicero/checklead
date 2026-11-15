@@ -111,7 +111,7 @@ Em desenvolvimento, o backend usa SQLite em `server/radar.sqlite`. O antigo cami
    - `SUPABASE_URL` — URL do projeto
    - `SUPABASE_SECRET_KEY` — a nova chave **Secret** do backend (`sb_secret_...`); nunca a coloque no frontend, em variáveis `VITE_*` ou no Git
    - `APP_URL` — URL pública do app, por exemplo `https://checklead.robsonsvicero.com.br`; usada para direcionar os convites
-7. Configure o SMTP em **Authentication > SMTP Settings** e permita a URL `https://checklead.robsonsvicero.com.br/login?convite=1` em **Authentication > URL Configuration**. Para desenvolvimento local, permita também `http://localhost:5173/login?convite=1`.
+7. Configure o SMTP em **Authentication > SMTP Settings** e permita as URLs `https://checklead.robsonsvicero.com.br/login?convite=1` (convites) e `https://checklead.robsonsvicero.com.br/login` (recuperação de senha) em **Authentication > URL Configuration**. Para desenvolvimento local, permita também `http://localhost:5173/login?convite=1` e `http://localhost:5173/login`. Se o link de recuperação redirecionar para a raiz do site, o app preserva o token ao encaminhá-lo para o login.
 8. Coloque o app em manutenção durante a aplicação da migração e a publicação do código atualizado: a nova versão exige o schema multiusuário. Depois, reinicie o aplicativo. Sem essas configurações, o backend falha explicitamente em vez de gravar em SQLite temporário.
 
 `JWT_SECRET` só é usado pelo login local em SQLite; o modo Supabase usa os tokens de sessão do Supabase Auth em cookies HTTP-only.

@@ -166,26 +166,52 @@ export async function completeInvitation(
   refreshToken: string,
   newPassword: string
 ): Promise<AuthenticatedSession> {
+  return completePasswordFromEmailTokens(
+    accessToken,
+    refreshToken,
+    newPassword,
+    'O convite expirou ou não é válido. Peça um novo convite.',
+    'O perfil do convite não foi encontrado.'
+  );
+}
+
+export async function completePasswordRecovery(
+  accessToken: string,
+  refreshToken: string,
+  newPassword: string
+): Promise<AuthenticatedSession> {
+  return completePasswordFromEmailTokens(
+    accessToken,
+    refreshToken,
+    newPassword,
+    'O link de redefinição expirou ou não é válido. Solicite um novo link.',
+    'O perfil desta conta não foi encontrado.'
+  );
+}
+
+async function completePasswordFromEmailTokens(
+  accessToken: string,
+  refreshToken: string,
+  newPassword: string,
+  invalidTokensMessage: string,
+  missingProfileMessage: string
+): Promise<AuthenticatedSession> {
   const { data: tokenData, error: tokenError } = await getSupabaseClient().auth.getUser(accessToken);
   if (tokenError) {
-    if (isInvalidAuthError(tokenError)) {
-      throw new Error('O convite expirou ou não é válido. Peça um novo convite.');
-    }
+    if (isInvalidAuthError(tokenError)) throw new Error(invalidTokensMessage);
     throw tokenError;
   }
-  if (!tokenData.user) throw new Error('O convite expirou ou não é válido. Peça um novo convite.');
+  if (!tokenData.user) throw new Error(invalidTokensMessage);
 
   const refreshed = await createSupabaseAuthClient().auth.refreshSession({
     refresh_token: refreshToken
   });
   if (refreshed.error) {
-    if (isInvalidAuthError(refreshed.error)) {
-      throw new Error('O convite expirou ou não é válido. Peça um novo convite.');
-    }
+    if (isInvalidAuthError(refreshed.error)) throw new Error(invalidTokensMessage);
     throw refreshed.error;
   }
   if (!refreshed.data.user || !refreshed.data.session || refreshed.data.user.id !== tokenData.user.id) {
-    throw new Error('O convite expirou ou não é válido. Peça um novo convite.');
+    throw new Error(invalidTokensMessage);
   }
 
   const { error: updateError } = await getSupabaseClient().auth.admin.updateUserById(
@@ -195,7 +221,7 @@ export async function completeInvitation(
   if (updateError) throw updateError;
 
   const user = await getProfile(tokenData.user.id);
-  if (!user) throw new Error('O perfil do convite não foi encontrado.');
+  if (!user) throw new Error(missingProfileMessage);
 
   return {
     user,

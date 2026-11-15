@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { apiFetch } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.js';
 
-interface InvitationTokens {
+interface EmailActionTokens {
   accessToken: string;
   refreshToken: string;
 }
@@ -12,33 +12,79 @@ export const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [confirmacaoSenha, setConfirmacaoSenha] = useState('');
-  const [invitationTokens, setInvitationTokens] = useState<InvitationTokens | null>(null);
+  const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [mostrarConfirmacaoSenha, setMostrarConfirmacaoSenha] = useState(false);
+  const [invitationTokens, setInvitationTokens] = useState<EmailActionTokens | null>(null);
+  const [recoveryTokens, setRecoveryTokens] = useState<EmailActionTokens | null>(null);
+  const [passwordRecoveryMode, setPasswordRecoveryMode] = useState(false);
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
   const { login, hasUser, provider, authenticated, loading: authLoading, checkAuth } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const isInvitation = location.search.includes('convite=1') || invitationTokens !== null;
+  const hashParams = new URLSearchParams(location.hash.replace(/^#/, ''));
+  const searchParams = new URLSearchParams(location.search);
+  const hashType = hashParams.get('type') || searchParams.get('type');
+  const hasAuthCallbackError = ['error_code', 'error', 'error_description']
+    .some(key => hashParams.has(key) || searchParams.has(key));
+  const isInvitation = location.search.includes('convite=1')
+    || invitationTokens !== null
+    || hashType === 'invite';
+  const isPasswordRecovery = passwordRecoveryMode
+    || recoveryTokens !== null
+    || hashType === 'recovery'
+    || hasAuthCallbackError;
+  const isPasswordSetup = isInvitation || isPasswordRecovery;
+  const hasEmailAction = isInvitation || isPasswordRecovery;
 
   useEffect(() => {
     if (!authLoading && provider === 'sqlite' && !hasUser) {
       navigate('/setup', { replace: true });
-    } else if (!authLoading && authenticated && !isInvitation) {
+    } else if (!authLoading && authenticated && !hasEmailAction) {
       navigate('/', { replace: true });
     }
-  }, [authLoading, authenticated, hasUser, isInvitation, navigate, provider]);
+  }, [authLoading, authenticated, hasEmailAction, hasUser, navigate, provider]);
 
   useEffect(() => {
     const params = new URLSearchParams(location.hash.replace(/^#/, ''));
-    const accessToken = params.get('access_token');
-    const refreshToken = params.get('refresh_token');
-    const type = params.get('type');
+    const queryParams = new URLSearchParams(location.search);
+    const accessToken = params.get('access_token') || queryParams.get('access_token');
+    const refreshToken = params.get('refresh_token') || queryParams.get('refresh_token');
+    const type = params.get('type') || queryParams.get('type');
+    const recoveryError = params.get('error_code')
+      || params.get('error')
+      || params.get('error_description')
+      || queryParams.get('error_code')
+      || queryParams.get('error')
+      || queryParams.get('error_description');
+    const cleanSearch = new URLSearchParams(location.search);
+    ['access_token', 'refresh_token', 'type', 'error', 'error_code', 'error_description', 'expires_at', 'expires_in', 'token_type']
+      .forEach(key => cleanSearch.delete(key));
+    const cleanQuery = cleanSearch.toString();
+    const cleanUrl = `${location.pathname}${cleanQuery ? `?${cleanQuery}` : ''}`;
 
-    if (type === 'invite' && accessToken && refreshToken) {
-      setInvitationTokens({ accessToken, refreshToken });
-      setErro(null);
-      window.history.replaceState(null, '', `${location.pathname}${location.search}`);
+    if (type === 'invite') {
+      if (accessToken && refreshToken) {
+        setInvitationTokens({ accessToken, refreshToken });
+        setRecoveryTokens(null);
+        setPasswordRecoveryMode(false);
+        setErro(null);
+      } else {
+        setInvitationTokens(null);
+        setErro('Este link de convite expirou ou já foi usado. Peça ao administrador para enviar outro convite.');
+      }
+      window.history.replaceState(null, '', cleanUrl);
+    } else if (type === 'recovery' || recoveryError) {
+      setInvitationTokens(null);
+      setPasswordRecoveryMode(true);
+      setRecoveryTokens(type === 'recovery' && accessToken && refreshToken
+        ? { accessToken, refreshToken }
+        : null);
+      setErro(type === 'recovery' && accessToken && refreshToken
+        ? null
+        : 'Este link de redefinição expirou ou já foi usado. Solicite outro link.');
+      window.history.replaceState(null, '', cleanUrl);
     } else if (location.search.includes('convite=1')) {
       setErro('Este link de convite expirou ou já foi usado. Peça ao administrador para enviar outro convite.');
     }
@@ -52,11 +98,15 @@ export const LoginPage: React.FC = () => {
       setErro('Abra o link recebido por e-mail para aceitar o convite.');
       return;
     }
-    if (isInvitation && senha !== confirmacaoSenha) {
+    if (isPasswordRecovery && !recoveryTokens) {
+      setErro('Abra um link de redefinição válido recebido por e-mail.');
+      return;
+    }
+    if (isPasswordSetup && senha !== confirmacaoSenha) {
       setErro('A confirmação da senha não confere.');
       return;
     }
-    if (isInvitation && senha.length < 8) {
+    if (isPasswordSetup && senha.length < 8) {
       setErro('A senha deve ter pelo menos 8 caracteres.');
       return;
     }
@@ -67,6 +117,12 @@ export const LoginPage: React.FC = () => {
         await apiFetch('/auth/accept-invitation', {
           method: 'POST',
           body: JSON.stringify({ ...invitationTokens, novaSenha: senha })
+        });
+        await checkAuth();
+      } else if (isPasswordRecovery && recoveryTokens) {
+        await apiFetch('/auth/complete-password-recovery', {
+          method: 'POST',
+          body: JSON.stringify({ ...recoveryTokens, novaSenha: senha })
         });
         await checkAuth();
       } else {
@@ -98,12 +154,16 @@ export const LoginPage: React.FC = () => {
           <div style={{ display: 'inline-flex', marginBottom: '12px' }}>
             <span className="brand-mark" style={{ width: '48px', height: '48px' }}>
               <span className="pulse-ring"></span>
-              <img src="/favicon.svg" alt="CheckLead" style={{ width: '40px', height: '40px' }} />
+              <img src="/favicon.svg" alt="CheckLEAD" style={{ width: '40px', height: '40px' }} />
             </span>
           </div>
-          <h1 className="auth-title" style={{ fontSize: '20px', fontWeight: 750, letterSpacing: '0.08em' }}>CheckLead</h1>
+          <h1 className="auth-title" style={{ fontSize: '20px', fontWeight: 750, letterSpacing: '0.08em' }}>CheckLEAD</h1>
           <p className="auth-subtitle" style={{ fontSize: '13px', marginTop: '4px' }}>
-            {isInvitation ? 'Ative seu acesso ao CheckLead' : 'Detector de vazamento de vendas'}
+            {isInvitation
+              ? 'Ative seu acesso ao CheckLEAD'
+              : isPasswordRecovery
+                ? 'Defina uma nova senha para sua conta'
+                : 'Detector de vazamento de vendas'}
           </p>
         </div>
 
@@ -121,18 +181,24 @@ export const LoginPage: React.FC = () => {
           </div>
         )}
 
-        {isInvitation && !invitationTokens ? (
+        {(isInvitation && !invitationTokens) || (isPasswordRecovery && !recoveryTokens) ? (
           <button
             type="button"
             className="btn-acao"
             style={{ width: '100%' }}
-            onClick={() => navigate('/login', { replace: true })}
+            onClick={() => {
+              setInvitationTokens(null);
+              setRecoveryTokens(null);
+              setPasswordRecoveryMode(false);
+              setErro(null);
+              navigate('/login', { replace: true });
+            }}
           >
             Voltar para o login
           </button>
         ) : (
           <form onSubmit={handleSubmit}>
-            {!isInvitation && provider === 'supabase' && (
+            {!isPasswordSetup && provider === 'supabase' && (
               <div className="form-group">
                 <label className="form-label" htmlFor="login-email">E-mail</label>
                 <input
@@ -151,38 +217,64 @@ export const LoginPage: React.FC = () => {
 
             <div className="form-group">
               <label className="form-label" htmlFor="login-senha">
-                {isInvitation ? 'Crie uma senha (mínimo 8 caracteres)' : 'Sua Senha de Acesso'}
+                {isPasswordRecovery
+                  ? 'Nova senha (mínimo 8 caracteres)'
+                  : isInvitation
+                    ? 'Crie uma senha (mínimo 8 caracteres)'
+                    : 'Sua Senha de Acesso'}
               </label>
-              <input
-                id="login-senha"
-                type="password"
-                className="form-input"
-                placeholder={isInvitation ? 'Crie uma senha segura' : 'Digite sua senha'}
-                value={senha}
-                onChange={e => setSenha(e.target.value)}
-                autoComplete={isInvitation ? 'new-password' : 'current-password'}
-                required
-                autoFocus={provider === 'sqlite' || isInvitation}
-              />
+              <div className="password-input-wrap">
+                <input
+                  id="login-senha"
+                  type={mostrarSenha ? 'text' : 'password'}
+                  className="form-input"
+                  placeholder={isPasswordRecovery
+                    ? 'Digite sua nova senha'
+                    : isInvitation
+                      ? 'Crie uma senha segura'
+                      : 'Digite sua senha'}
+                  value={senha}
+                  onChange={e => setSenha(e.target.value)}
+                  autoComplete={isPasswordSetup ? 'new-password' : 'current-password'}
+                  required
+                  autoFocus={provider === 'sqlite' || isPasswordSetup}
+                />
+                <PasswordVisibilityToggle
+                  inputId="login-senha"
+                  label="senha"
+                  visible={mostrarSenha}
+                  onToggle={() => setMostrarSenha(visible => !visible)}
+                />
+              </div>
             </div>
 
-            {isInvitation && (
+            {isPasswordSetup && (
               <div className="form-group">
-                <label className="form-label" htmlFor="confirmacao-senha">Confirme a senha</label>
-                <input
-                  id="confirmacao-senha"
-                  type="password"
-                  className="form-input"
-                  placeholder="Digite a mesma senha"
-                  value={confirmacaoSenha}
-                  onChange={e => setConfirmacaoSenha(e.target.value)}
-                  autoComplete="new-password"
-                  required
-                />
+                <label className="form-label" htmlFor="confirmacao-senha">
+                  {isPasswordRecovery ? 'Confirme a nova senha' : 'Confirme a senha'}
+                </label>
+                <div className="password-input-wrap">
+                  <input
+                    id="confirmacao-senha"
+                    type={mostrarConfirmacaoSenha ? 'text' : 'password'}
+                    className="form-input"
+                    placeholder="Digite a mesma senha"
+                    value={confirmacaoSenha}
+                    onChange={e => setConfirmacaoSenha(e.target.value)}
+                    autoComplete="new-password"
+                    required
+                  />
+                  <PasswordVisibilityToggle
+                    inputId="confirmacao-senha"
+                    label="confirmação de senha"
+                    visible={mostrarConfirmacaoSenha}
+                    onToggle={() => setMostrarConfirmacaoSenha(visible => !visible)}
+                  />
+                </div>
               </div>
             )}
 
-            {provider === 'supabase' && !isInvitation && (
+            {provider === 'supabase' && !isPasswordSetup && (
               <p className="auth-subtitle" style={{ fontSize: '12px', marginTop: '-4px' }}>
                 O acesso é feito por convite do administrador.
               </p>
@@ -194,7 +286,15 @@ export const LoginPage: React.FC = () => {
               style={{ width: '100%', marginTop: '12px', padding: '12px', fontSize: '15px' }}
               disabled={carregando || authLoading}
             >
-              {carregando ? 'Aguarde...' : isInvitation ? 'Ativar minha conta' : provider === 'supabase' ? 'Entrar' : 'Acessar Radar'}
+              {carregando
+                ? 'Aguarde...'
+                : isPasswordRecovery
+                  ? 'Salvar nova senha'
+                  : isInvitation
+                    ? 'Ativar minha conta'
+                    : provider === 'supabase'
+                      ? 'Entrar'
+                      : 'Acessar Radar'}
             </button>
           </form>
         )}
@@ -202,3 +302,32 @@ export const LoginPage: React.FC = () => {
     </div>
   );
 };
+
+interface PasswordVisibilityToggleProps {
+  inputId: string;
+  label: string;
+  visible: boolean;
+  onToggle: () => void;
+}
+
+const PasswordVisibilityToggle: React.FC<PasswordVisibilityToggleProps> = ({
+  inputId,
+  label,
+  visible,
+  onToggle
+}) => (
+  <button
+    type="button"
+    className="password-visibility-toggle"
+    aria-label={`${visible ? 'Ocultar' : 'Mostrar'} ${label}`}
+    aria-controls={inputId}
+    aria-pressed={visible}
+    onClick={onToggle}
+  >
+    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
+      <circle cx="12" cy="12" r="2.5" />
+      {visible && <path d="M3 3l18 18" />}
+    </svg>
+  </button>
+);

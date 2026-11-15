@@ -20,10 +20,10 @@ export const Header: React.FC<HeaderProps> = ({ totalAlertas = 0 }) => {
   return (
     <header className="app-header">
       <div className="header-content">
-        <Link to="/" className="header-brand" aria-label="CheckLead">
+        <Link to="/" className="header-brand" aria-label="CheckLEAD">
           <span className="brand-mark">
             <span className="pulse-ring"></span>
-            <img src="/favicon.svg" alt="CheckLead" />
+            <img src="/favicon.svg" alt="CheckLEAD" />
           </span>
           <span>
             <span className="brand-title">CheckLEAD</span>
