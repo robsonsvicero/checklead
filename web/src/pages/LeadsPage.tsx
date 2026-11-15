@@ -22,7 +22,7 @@ export const LeadsPage: React.FC = () => {
   const [busca, setBusca] = useState('');
   const [status, setStatus] = useState('todos');
   const [origem, setOrigem] = useState('todos');
-  const [ordenarPor, setOrdenarPor] = useState<'data' | 'valor'>('data');
+  const [ordenarPor, setOrdenarPor] = useState<'data' | 'valor' | 'nome'>('data');
   const [ordem, setOrdem] = useState<'asc' | 'desc'>('desc');
 
   // Modais
@@ -216,7 +216,7 @@ export const LeadsPage: React.FC = () => {
               value={`${ordenarPor}-${ordem}`}
               onChange={e => {
                 const [c, o] = e.target.value.split('-');
-                setOrdenarPor(c as 'data' | 'valor');
+                setOrdenarPor(c as 'data' | 'valor' | 'nome');
                 setOrdem(o as 'asc' | 'desc');
               }}
             >
@@ -224,6 +224,8 @@ export const LeadsPage: React.FC = () => {
               <option value="data-asc">Mais antigos</option>
               <option value="valor-desc">Maior valor</option>
               <option value="valor-asc">Menor valor</option>
+              <option value="nome-asc">Nome (A-Z)</option>
+              <option value="nome-desc">Nome (Z-A)</option>
             </select>
           </div>
         </div>

@@ -67,4 +67,20 @@ describe('Supabase tenant isolation', () => {
 
     expect(lead).toBeNull();
   });
+
+  it.each([
+    ['asc', ['Álvaro', 'Ana', 'Bruno']],
+    ['desc', ['Bruno', 'Ana', 'Álvaro']]
+  ] as const)('sorts lead names in %s order using Portuguese collation', async (ordem, expected) => {
+    records.leads = [
+      { id: 1, user_id: 'user-a', nome: 'Bruno', valor_estimado: 100 },
+      { id: 2, user_id: 'user-a', nome: 'Álvaro', valor_estimado: 200 },
+      { id: 3, user_id: 'user-a', nome: 'Ana', valor_estimado: 300 },
+      { id: 4, user_id: 'user-b', nome: 'Afonso', valor_estimado: 400 }
+    ];
+
+    const leads = await listarLeads({ ordenarPor: 'nome', ordem }, 'user-a');
+
+    expect(leads.map(lead => lead.nome)).toEqual(expected);
+  });
 });

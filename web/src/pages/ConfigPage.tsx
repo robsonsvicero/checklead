@@ -25,7 +25,9 @@ export const ConfigPage: React.FC = () => {
   const [erroConvite, setErroConvite] = useState<string | null>(null);
   const [sucessoConvite, setSucessoConvite] = useState<string | null>(null);
   const [erroUsuarios, setErroUsuarios] = useState<string | null>(null);
+  const [sucessoUsuarios, setSucessoUsuarios] = useState<string | null>(null);
   const [carregandoUsuarios, setCarregandoUsuarios] = useState(false);
+  const [usuarioExcluindo, setUsuarioExcluindo] = useState<string | null>(null);
 
   // Importação e Exportação
   const [importando, setImportando] = useState(false);
@@ -145,6 +147,27 @@ export const ConfigPage: React.FC = () => {
       setErroConvite(err instanceof Error ? err.message : 'Falha ao enviar convite.');
     } finally {
       setEnviandoConvite(false);
+    }
+  };
+
+  const handleExcluirUsuario = async (usuario: UserSummary) => {
+    const email = usuario.email || 'esta conta';
+    const confirmou = window.confirm(
+      `Excluir permanentemente ${email}? Os leads, interações e configurações dessa conta também serão excluídos. Essa ação não pode ser desfeita.`
+    );
+    if (!confirmou) return;
+
+    setErroUsuarios(null);
+    setSucessoUsuarios(null);
+    try {
+      setUsuarioExcluindo(usuario.id);
+      await apiFetch(`/auth/users/${encodeURIComponent(usuario.id)}`, { method: 'DELETE' });
+      setUsuarios(current => current.filter(item => item.id !== usuario.id));
+      setSucessoUsuarios(`A conta de ${email} e os dados vinculados foram excluídos.`);
+    } catch (err) {
+      setErroUsuarios(err instanceof Error ? err.message : 'Falha ao excluir a conta.');
+    } finally {
+      setUsuarioExcluindo(null);
     }
   };
 
@@ -522,6 +545,7 @@ export const ConfigPage: React.FC = () => {
               {erroConvite && <div className="config-message error" role="alert">{erroConvite}</div>}
               {sucessoConvite && <div className="config-message success" role="status">{sucessoConvite}</div>}
               {erroUsuarios && <div className="config-message error" role="alert">{erroUsuarios}</div>}
+              {sucessoUsuarios && <div className="config-message success" role="status">{sucessoUsuarios}</div>}
 
               <form onSubmit={handleConvidarUsuario} style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'end' }}>
                 <div className="form-group" style={{ flex: '1 1 240px', marginBottom: 0 }}>
@@ -554,17 +578,33 @@ export const ConfigPage: React.FC = () => {
                       display: 'flex',
                       justifyContent: 'space-between',
                       alignItems: 'center',
+                      flexWrap: 'wrap',
                       gap: '12px',
                       padding: '10px 0',
                       borderBottom: '1px solid var(--line-soft)',
                       fontSize: '13px'
                     }}>
-                      <span style={{ overflowWrap: 'anywhere', color: 'var(--foreground)' }}>
+                      <span style={{ flex: '1 1 180px', overflowWrap: 'anywhere', color: 'var(--foreground)' }}>
                         {usuario.email || 'E-mail indisponível'}
                       </span>
-                      <span style={{ color: 'var(--muted-foreground)', whiteSpace: 'nowrap' }}>
-                        {usuario.role === 'admin' ? 'Administrador' : 'Usuário'}
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ color: 'var(--muted-foreground)', whiteSpace: 'nowrap' }}>
+                          {usuario.role === 'admin' ? 'Administrador' : 'Usuário'}
+                        </span>
+                        {usuario.id === user?.id ? (
+                          <span style={{ color: 'var(--muted-foreground)', whiteSpace: 'nowrap' }}>Sua conta</span>
+                        ) : (
+                          <button
+                            type="button"
+                            className="btn-acao danger"
+                            aria-label={`Excluir conta de ${usuario.email || 'usuário'}`}
+                            disabled={usuarioExcluindo !== null}
+                            onClick={() => handleExcluirUsuario(usuario)}
+                          >
+                            {usuarioExcluindo === usuario.id ? 'Excluindo...' : 'Excluir'}
+                          </button>
+                        )}
+                      </div>
                     </li>
                   ))}
                 </ul>

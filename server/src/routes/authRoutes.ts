@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   AlterarSenhaSchema,
+  AuthUserIdSchema,
   CompleteInvitationSchema,
   EmailLoginSchema,
   InviteEmailSchema,
@@ -17,6 +18,7 @@ import {
   clearSessionCookies,
   completeInvitation,
   completePasswordRecovery,
+  deleteUserAccount,
   generateToken,
   getAuthenticatedSession,
   getSessionTokens,
@@ -183,6 +185,36 @@ authRouter.get('/users', requireAuth, requireAdmin, asyncHandler(async (_req, re
     return;
   }
   res.json(await listUsers());
+}));
+
+authRouter.delete('/users/:userId', requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+  if (getDatabaseProvider() !== 'supabase') {
+    res.status(404).json({ error: 'Gerenciamento de usuários está disponível somente com Supabase.' });
+    return;
+  }
+
+  const userId = AuthUserIdSchema.parse(req.params.userId);
+  const actingUserId = getAuthenticatedUser(req).id;
+  try {
+    await deleteUserAccount(userId, actingUserId);
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message === 'Conta não encontrada.') {
+        res.status(404).json({ error: error.message });
+        return;
+      }
+      if (error.message === 'Não é permitido excluir a própria conta.') {
+        res.status(400).json({ error: error.message });
+        return;
+      }
+      if (error.message === 'Não é possível excluir o último administrador.') {
+        res.status(409).json({ error: error.message });
+        return;
+      }
+    }
+    throw error;
+  }
+  res.status(204).end();
 }));
 
 authRouter.post('/invitations', requireAuth, requireAdmin, asyncHandler(async (req, res) => {

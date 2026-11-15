@@ -297,6 +297,33 @@ export async function listUsers(): Promise<UserSummary[]> {
   });
 }
 
+export async function deleteUserAccount(userId: string, actingUserId: string): Promise<void> {
+  if (userId === actingUserId) {
+    throw new Error('Não é permitido excluir a própria conta.');
+  }
+
+  const { data: profile, error: profileError } = await getSupabaseClient()
+    .from('perfis')
+    .select('id, role')
+    .eq('id', userId)
+    .maybeSingle();
+  throwSupabaseError(profileError);
+  if (!profile) throw new Error('Conta não encontrada.');
+
+  if (profile.role === 'admin') {
+    const { count, error: countError } = await getSupabaseClient()
+      .from('perfis')
+      .select('id', { count: 'exact', head: true })
+      .eq('role', 'admin');
+    throwSupabaseError(countError);
+    if (count === null) throw new Error('Não foi possível verificar os administradores ativos.');
+    if (count <= 1) throw new Error('Não é possível excluir o último administrador.');
+  }
+
+  const { error: deleteError } = await getSupabaseClient().auth.admin.deleteUser(userId);
+  throwSupabaseError(deleteError);
+}
+
 export function setSessionCookies(res: Response, session: AuthSessionTokens): void {
   const secure = process.env.NODE_ENV === 'production';
   res.cookie('supabase_access_token', session.access_token, {

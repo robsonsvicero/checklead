@@ -60,7 +60,7 @@ Em desenvolvimento, o backend usa SQLite em `server/radar.sqlite`. O antigo cami
 
 ### Configurar o Supabase
 1. Crie um projeto Supabase.
-2. No **SQL Editor**, execute [`supabase/migrations/202611140001_initial_schema.sql`](./supabase/migrations/202611140001_initial_schema.sql) e, em seguida, [`supabase/migrations/202611150001_multi_user_auth.sql`](./supabase/migrations/202611150001_multi_user_auth.sql).
+2. No **SQL Editor**, execute [`supabase/migrations/202611140001_initial_schema.sql`](./supabase/migrations/202611140001_initial_schema.sql), [`supabase/migrations/202611150001_multi_user_auth.sql`](./supabase/migrations/202611150001_multi_user_auth.sql) e [`supabase/migrations/202611150002_cascade_auth_user_deletion.sql`](./supabase/migrations/202611150002_cascade_auth_user_deletion.sql), nessa ordem. A última migração permite que a exclusão de uma conta remova também os leads, interações e configurações vinculados.
 3. Antes de criar qualquer conta, desative o cadastro público em **Authentication > Settings > User Signups**.
 4. Crie a conta administradora pelo painel em **Authentication > Users > Add user**. Se já existirem contas Auth, escolha explicitamente qual delas será administradora.
 5. No SQL Editor, substitua `admin@exemplo.com` pelo e-mail escolhido e execute este bloco. Ele promove a conta e atribui a ela os leads, interações e configurações existentes:

@@ -92,6 +92,8 @@ export const InviteEmailSchema = z.object({
   email: z.string().trim().email('Informe um e-mail válido').transform(email => email.toLowerCase())
 });
 
+export const AuthUserIdSchema = z.string().uuid('Identificador de usuário inválido');
+
 export const CompleteInvitationSchema = z.object({
   accessToken: z.string().min(20),
   refreshToken: z.string().min(1),

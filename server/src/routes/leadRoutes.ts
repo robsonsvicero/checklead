@@ -27,7 +27,7 @@ leadRouter.get('/', asyncHandler(async (req, res) => {
     status: typeof status === 'string' ? status : undefined,
     origem: typeof origem === 'string' ? origem : undefined,
     busca: typeof busca === 'string' ? busca : undefined,
-    ordenarPor: ordenarPor === 'valor' ? 'valor' : 'data',
+    ordenarPor: ordenarPor === 'valor' ? 'valor' : ordenarPor === 'nome' ? 'nome' : 'data',
     ordem: ordem === 'asc' ? 'asc' : 'desc'
   }, user.id);
 

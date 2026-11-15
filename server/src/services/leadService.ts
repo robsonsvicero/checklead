@@ -13,7 +13,7 @@ export interface ListLeadsFilter {
   status?: string;
   origem?: string;
   busca?: string;
-  ordenarPor?: 'data' | 'valor';
+  ordenarPor?: 'data' | 'valor' | 'nome';
   ordem?: 'asc' | 'desc';
 }
 
@@ -60,7 +60,9 @@ export async function listarLeads(filtros: ListLeadsFilter, userId: string): Pro
 
     const comparar = filtros.ordenarPor === 'valor'
       ? (a: Lead, b: Lead) => a.valor_estimado - b.valor_estimado
-      : (a: Lead, b: Lead) => a.criado_em.localeCompare(b.criado_em);
+      : filtros.ordenarPor === 'nome'
+        ? compararNomes
+        : (a: Lead, b: Lead) => a.criado_em.localeCompare(b.criado_em);
     const direcao = filtros.ordem === 'asc' ? 1 : -1;
     return leads.sort((a, b) => comparar(a, b) * direcao);
   }
@@ -91,7 +93,12 @@ export async function listarLeads(filtros: ListLeadsFilter, userId: string): Pro
   const direcao = filtros.ordem === 'asc' ? 'ASC' : 'DESC';
 
   const sql = `SELECT * FROM leads ${whereSql} ORDER BY ${ordemCampo} ${direcao}`;
-  return db.prepare(sql).all(...params) as unknown as Lead[];
+  const leads = db.prepare(sql).all(...params) as unknown as Lead[];
+  if (filtros.ordenarPor === 'nome') {
+    const direcaoNome = filtros.ordem === 'asc' ? 1 : -1;
+    return leads.sort((a, b) => compararNomes(a, b) * direcaoNome);
+  }
+  return leads;
 }
 
 export async function obterLeadPorId(id: number, userId: string): Promise<LeadComInteracoes | null> {
@@ -434,4 +441,8 @@ function normalizarInteracao(interacao: Interacao & { user_id?: string }): Inter
     id: Number(interacao.id),
     lead_id: Number(interacao.lead_id)
   };
+}
+
+function compararNomes(a: Lead, b: Lead): number {
+  return a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base', numeric: true });
 }
