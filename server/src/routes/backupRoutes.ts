@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
-import { requireAuth } from '../middlewares/auth.js';
+import { getAuthenticatedUser, requireAuth } from '../middlewares/auth.js';
 import {
   gerarExportacaoJson,
   gerarExportacaoCsv,
@@ -28,7 +28,7 @@ backupRouter.post('/import/csv', asyncHandler(async (req, res) => {
       return;
     }
 
-    const resultado = await importarPlanilhaCsv(conteudo);
+    const resultado = await importarPlanilhaCsv(conteudo, getAuthenticatedUser(req).id);
     res.json({
       ok: true,
       message: `${resultado.totalImportados} leads importados com sucesso!${resultado.totalIgnorados > 0 ? ` (${resultado.totalIgnorados} linhas vazias ou sem nome/contato foram ignoradas)` : ''}`,
@@ -39,15 +39,15 @@ backupRouter.post('/import/csv', asyncHandler(async (req, res) => {
   }
 }));
 
-backupRouter.get('/export/json', asyncHandler(async (_req, res) => {
-  const dados = await gerarExportacaoJson();
+backupRouter.get('/export/json', asyncHandler(async (req, res) => {
+  const dados = await gerarExportacaoJson(getAuthenticatedUser(req).id);
   res.setHeader('Content-Type', 'application/json');
   res.setHeader('Content-Disposition', `attachment; filename=radar-leads-backup-${Date.now()}.json`);
   res.send(JSON.stringify(dados, null, 2));
 }));
 
-backupRouter.get('/export/csv', asyncHandler(async (_req, res) => {
-  const csv = await gerarExportacaoCsv();
+backupRouter.get('/export/csv', asyncHandler(async (req, res) => {
+  const csv = await gerarExportacaoCsv(getAuthenticatedUser(req).id);
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
   res.setHeader('Content-Disposition', `attachment; filename=radar-leads-${Date.now()}.csv`);
   res.send(csv);
@@ -55,7 +55,7 @@ backupRouter.get('/export/csv', asyncHandler(async (_req, res) => {
 
 backupRouter.post('/import/json', asyncHandler(async (req, res) => {
   try {
-    const resultado = await importarBackupJson(req.body);
+    const resultado = await importarBackupJson(req.body, getAuthenticatedUser(req).id);
     res.json({
       ok: true,
       message: `Backup restaurado com sucesso! ${resultado.totalLeads} leads e ${resultado.totalInteracoes} interações importadas.`,

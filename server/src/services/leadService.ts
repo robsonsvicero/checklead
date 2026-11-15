@@ -17,11 +17,12 @@ export interface ListLeadsFilter {
   ordem?: 'asc' | 'desc';
 }
 
-export async function listarInteracoes(): Promise<Interacao[]> {
+export async function listarInteracoes(userId: string): Promise<Interacao[]> {
   if (getDatabaseProvider() === 'supabase') {
     const { data, error } = await getSupabaseClient()
       .from('interacoes')
       .select('*')
+      .eq('user_id', userId)
       .order('criado_em', { ascending: true })
       .order('id', { ascending: true });
     throwSupabaseError(error);
@@ -33,11 +34,12 @@ export async function listarInteracoes(): Promise<Interacao[]> {
     .all() as unknown as Interacao[];
 }
 
-export async function listarLeads(filtros: ListLeadsFilter = {}): Promise<Lead[]> {
+export async function listarLeads(filtros: ListLeadsFilter, userId: string): Promise<Lead[]> {
   if (getDatabaseProvider() === 'supabase') {
     const { data, error } = await getSupabaseClient()
       .from('leads')
       .select('*')
+      .eq('user_id', userId)
       .order('id', { ascending: true });
     throwSupabaseError(error);
 
@@ -92,12 +94,12 @@ export async function listarLeads(filtros: ListLeadsFilter = {}): Promise<Lead[]
   return db.prepare(sql).all(...params) as unknown as Lead[];
 }
 
-export async function obterLeadPorId(id: number): Promise<LeadComInteracoes | null> {
+export async function obterLeadPorId(id: number, userId: string): Promise<LeadComInteracoes | null> {
   if (getDatabaseProvider() === 'supabase') {
     const client = getSupabaseClient();
     const [{ data: lead, error: leadError }, { data: interacoes, error: interacoesError }] = await Promise.all([
-      client.from('leads').select('*').eq('id', id).maybeSingle(),
-      client.from('interacoes').select('*').eq('lead_id', id).order('criado_em', { ascending: false })
+      client.from('leads').select('*').eq('id', id).eq('user_id', userId).maybeSingle(),
+      client.from('interacoes').select('*').eq('lead_id', id).eq('user_id', userId).order('criado_em', { ascending: false })
     ]);
     throwSupabaseError(leadError);
     throwSupabaseError(interacoesError);
@@ -121,12 +123,13 @@ export async function obterLeadPorId(id: number): Promise<LeadComInteracoes | nu
   };
 }
 
-export async function criarLead(dados: CriarLeadDTO): Promise<Lead> {
+export async function criarLead(dados: CriarLeadDTO, userId: string): Promise<Lead> {
   if (getDatabaseProvider() === 'supabase') {
     const whatsapp = dados.whatsapp?.trim() || null;
     const email = dados.email?.trim() || null;
     const responsavel = dados.responsavel?.trim() || null;
     const { data, error } = await getSupabaseClient().rpc('criar_lead_atomic', {
+      p_user_id: userId,
       p_lead: {
         nome: dados.nome.trim(),
         contato: dados.contato?.trim() || whatsapp || email || 'Sem contato',
@@ -180,13 +183,14 @@ export async function criarLead(dados: CriarLeadDTO): Promise<Lead> {
   return db.prepare('SELECT * FROM leads WHERE id = ?').get(novoId) as unknown as Lead;
 }
 
-export async function atualizarLead(id: number, dados: AtualizarLeadDTO): Promise<Lead> {
+export async function atualizarLead(id: number, dados: AtualizarLeadDTO, userId: string): Promise<Lead> {
   if (getDatabaseProvider() === 'supabase') {
     const client = getSupabaseClient();
     const { data: leadAtual, error: selectError } = await client
       .from('leads')
       .select('*')
       .eq('id', id)
+      .eq('user_id', userId)
       .maybeSingle();
     throwSupabaseError(selectError);
     if (!leadAtual) throw new Error('Lead não encontrado');
@@ -202,6 +206,7 @@ export async function atualizarLead(id: number, dados: AtualizarLeadDTO): Promis
       .from('leads')
       .update(atualizacoes)
       .eq('id', id)
+      .eq('user_id', userId)
       .select('*')
       .maybeSingle();
     throwSupabaseError(error);
@@ -280,9 +285,10 @@ export async function atualizarLead(id: number, dados: AtualizarLeadDTO): Promis
   return db.prepare('SELECT * FROM leads WHERE id = ?').get(id) as unknown as Lead;
 }
 
-export async function executarAcaoLead(id: number, acao: AcaoLeadDTO): Promise<LeadComInteracoes> {
+export async function executarAcaoLead(id: number, acao: AcaoLeadDTO, userId: string): Promise<LeadComInteracoes> {
   if (getDatabaseProvider() === 'supabase') {
     const { data, error } = await getSupabaseClient().rpc('executar_acao_lead', {
+      p_user_id: userId,
       p_id: id,
       p_acao: acao
     });
@@ -390,17 +396,18 @@ export async function executarAcaoLead(id: number, acao: AcaoLeadDTO): Promise<L
     }
   }
 
-  const leadAtualizado = await obterLeadPorId(id);
+  const leadAtualizado = await obterLeadPorId(id, userId);
   if (!leadAtualizado) throw new Error('Lead não encontrado');
   return leadAtualizado;
 }
 
-export async function excluirLead(id: number): Promise<boolean> {
+export async function excluirLead(id: number, userId: string): Promise<boolean> {
   if (getDatabaseProvider() === 'supabase') {
     const { data, error } = await getSupabaseClient()
       .from('leads')
       .delete()
       .eq('id', id)
+      .eq('user_id', userId)
       .select('id');
     throwSupabaseError(error);
     return (data || []).length > 0;
@@ -411,17 +418,19 @@ export async function excluirLead(id: number): Promise<boolean> {
   return Number(res.changes) > 0;
 }
 
-function normalizarLead(lead: Lead): Lead {
+function normalizarLead(lead: Lead & { user_id?: string }): Lead {
+  const { user_id: _userId, ...dadosLead } = lead;
   return {
-    ...lead,
+    ...dadosLead,
     id: Number(lead.id),
     valor_estimado: Number(lead.valor_estimado)
   };
 }
 
-function normalizarInteracao(interacao: Interacao): Interacao {
+function normalizarInteracao(interacao: Interacao & { user_id?: string }): Interacao {
+  const { user_id: _userId, ...dadosInteracao } = interacao;
   return {
-    ...interacao,
+    ...dadosInteracao,
     id: Number(interacao.id),
     lead_id: Number(interacao.lead_id)
   };

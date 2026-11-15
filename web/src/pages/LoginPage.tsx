@@ -1,31 +1,80 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { apiFetch } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.js';
 
+interface InvitationTokens {
+  accessToken: string;
+  refreshToken: string;
+}
+
 export const LoginPage: React.FC = () => {
+  const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
+  const [confirmacaoSenha, setConfirmacaoSenha] = useState('');
+  const [invitationTokens, setInvitationTokens] = useState<InvitationTokens | null>(null);
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
-  const { login, hasUser } = useAuth();
+  const { login, hasUser, provider, authenticated, loading: authLoading, checkAuth } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isInvitation = location.search.includes('convite=1') || invitationTokens !== null;
 
-  React.useEffect(() => {
-    if (!hasUser) {
-      navigate('/setup');
+  useEffect(() => {
+    if (!authLoading && provider === 'sqlite' && !hasUser) {
+      navigate('/setup', { replace: true });
+    } else if (!authLoading && authenticated && !isInvitation) {
+      navigate('/', { replace: true });
     }
-  }, [hasUser, navigate]);
+  }, [authLoading, authenticated, hasUser, isInvitation, navigate, provider]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.hash.replace(/^#/, ''));
+    const accessToken = params.get('access_token');
+    const refreshToken = params.get('refresh_token');
+    const type = params.get('type');
+
+    if (type === 'invite' && accessToken && refreshToken) {
+      setInvitationTokens({ accessToken, refreshToken });
+      setErro(null);
+      window.history.replaceState(null, '', `${location.pathname}${location.search}`);
+    } else if (location.search.includes('convite=1')) {
+      setErro('Este link de convite expirou ou já foi usado. Peça ao administrador para enviar outro convite.');
+    }
+  }, [location.hash, location.pathname, location.search]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErro(null);
 
+    if (isInvitation && !invitationTokens) {
+      setErro('Abra o link recebido por e-mail para aceitar o convite.');
+      return;
+    }
+    if (isInvitation && senha !== confirmacaoSenha) {
+      setErro('A confirmação da senha não confere.');
+      return;
+    }
+    if (isInvitation && senha.length < 8) {
+      setErro('A senha deve ter pelo menos 8 caracteres.');
+      return;
+    }
+
     try {
       setCarregando(true);
-      await login(senha);
-      navigate('/');
-    } catch (err: any) {
-      setErro(err.message || 'Senha incorreta');
+      if (isInvitation && invitationTokens) {
+        await apiFetch('/auth/accept-invitation', {
+          method: 'POST',
+          body: JSON.stringify({ ...invitationTokens, novaSenha: senha })
+        });
+        await checkAuth();
+      } else {
+        await login({ email: provider === 'supabase' ? email : undefined, senha });
+      }
+      navigate('/', { replace: true });
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : 'Não foi possível concluir o acesso.');
     } finally {
       setCarregando(false);
     }
@@ -54,7 +103,7 @@ export const LoginPage: React.FC = () => {
           </div>
           <h1 className="auth-title" style={{ fontSize: '20px', fontWeight: 750, letterSpacing: '0.08em' }}>CheckLead</h1>
           <p className="auth-subtitle" style={{ fontSize: '13px', marginTop: '4px' }}>
-            Detector de vazamento de vendas
+            {isInvitation ? 'Ative seu acesso ao CheckLead' : 'Detector de vazamento de vendas'}
           </p>
         </div>
 
@@ -67,36 +116,88 @@ export const LoginPage: React.FC = () => {
             borderRadius: '8px',
             fontSize: '13px',
             marginBottom: '16px'
-          }}>
+          }} role="alert">
             {erro}
           </div>
         )}
 
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label className="form-label" htmlFor="login-senha">Sua Senha de Acesso</label>
-            <input
-              id="login-senha"
-              type="password"
-              className="form-input"
-              placeholder="Digite sua senha"
-              value={senha}
-              onChange={e => setSenha(e.target.value)}
-              autoComplete="current-password"
-              required
-              autoFocus
-            />
-          </div>
-
+        {isInvitation && !invitationTokens ? (
           <button
-            type="submit"
-            className="btn-acao primary"
-            style={{ width: '100%', marginTop: '12px', padding: '12px', fontSize: '15px' }}
-            disabled={carregando}
+            type="button"
+            className="btn-acao"
+            style={{ width: '100%' }}
+            onClick={() => navigate('/login', { replace: true })}
           >
-            {carregando ? 'Entrando...' : 'Acessar Radar'}
+            Voltar para o login
           </button>
-        </form>
+        ) : (
+          <form onSubmit={handleSubmit}>
+            {!isInvitation && provider === 'supabase' && (
+              <div className="form-group">
+                <label className="form-label" htmlFor="login-email">E-mail</label>
+                <input
+                  id="login-email"
+                  type="email"
+                  className="form-input"
+                  placeholder="voce@exemplo.com"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  autoComplete="email"
+                  required
+                  autoFocus
+                />
+              </div>
+            )}
+
+            <div className="form-group">
+              <label className="form-label" htmlFor="login-senha">
+                {isInvitation ? 'Crie uma senha (mínimo 8 caracteres)' : 'Sua Senha de Acesso'}
+              </label>
+              <input
+                id="login-senha"
+                type="password"
+                className="form-input"
+                placeholder={isInvitation ? 'Crie uma senha segura' : 'Digite sua senha'}
+                value={senha}
+                onChange={e => setSenha(e.target.value)}
+                autoComplete={isInvitation ? 'new-password' : 'current-password'}
+                required
+                autoFocus={provider === 'sqlite' || isInvitation}
+              />
+            </div>
+
+            {isInvitation && (
+              <div className="form-group">
+                <label className="form-label" htmlFor="confirmacao-senha">Confirme a senha</label>
+                <input
+                  id="confirmacao-senha"
+                  type="password"
+                  className="form-input"
+                  placeholder="Digite a mesma senha"
+                  value={confirmacaoSenha}
+                  onChange={e => setConfirmacaoSenha(e.target.value)}
+                  autoComplete="new-password"
+                  required
+                />
+              </div>
+            )}
+
+            {provider === 'supabase' && !isInvitation && (
+              <p className="auth-subtitle" style={{ fontSize: '12px', marginTop: '-4px' }}>
+                O acesso é feito por convite do administrador.
+              </p>
+            )}
+
+            <button
+              type="submit"
+              className="btn-acao primary"
+              style={{ width: '100%', marginTop: '12px', padding: '12px', fontSize: '15px' }}
+              disabled={carregando || authLoading}
+            >
+              {carregando ? 'Aguarde...' : isInvitation ? 'Ativar minha conta' : provider === 'supabase' ? 'Entrar' : 'Acessar Radar'}
+            </button>
+          </form>
+        )}
       </div>
     </div>
   );

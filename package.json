@@ -19,5 +19,10 @@
   },
   "devDependencies": {
     "concurrently": "^9.1.2"
+  },
+  "overrides": {
+    "vite": {
+      "esbuild": "0.28.2"
+    }
   }
 }

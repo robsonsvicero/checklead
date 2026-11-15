@@ -27,23 +27,26 @@ try {
   const payload = {
     leads: db.prepare('SELECT * FROM leads ORDER BY id ASC').all(),
     interacoes: db.prepare('SELECT * FROM interacoes ORDER BY id ASC').all(),
-    configuracoes: db.prepare('SELECT * FROM configuracoes WHERE id = 1').get() || null,
-    usuarios: db.prepare('SELECT * FROM usuarios ORDER BY id ASC').all()
+    configuracoes: db.prepare('SELECT * FROM configuracoes WHERE id = 1').get() || null
   };
   const counts = {
     leads: payload.leads.length,
-    interacoes: payload.interacoes.length,
-    usuarios: payload.usuarios.length
+    interacoes: payload.interacoes.length
   };
 
   if (dryRun) {
-    console.log(`Prévia local: ${counts.leads} leads, ${counts.interacoes} interações e ${counts.usuarios} usuário(s). Nada foi enviado.`);
+    console.log(`Prévia local: ${counts.leads} leads e ${counts.interacoes} interações. Nenhum dado foi enviado.`);
   } else {
     if (process.env.DATABASE_PROVIDER !== 'supabase') {
       throw new Error('Defina DATABASE_PROVIDER=supabase antes de executar a migração.');
     }
+    const userId = process.env.SUPABASE_MIGRATION_USER_ID?.trim();
+    if (!userId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(userId)) {
+      throw new Error('Defina SUPABASE_MIGRATION_USER_ID com o UUID da conta que receberá os dados.');
+    }
 
     const { data, error } = await getSupabaseClient().rpc('migrar_backup_sqlite', {
+      p_user_id: userId,
       p_backup: payload
     });
     throwSupabaseError(error);

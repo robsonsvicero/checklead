@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
-import { requireAuth } from '../middlewares/auth.js';
+import { getAuthenticatedUser, requireAuth } from '../middlewares/auth.js';
 import { obterConfiguracao } from '../services/configService.js';
 import { listarInteracoes, listarLeads } from '../services/leadService.js';
 import {
@@ -14,11 +14,12 @@ export const radarRouter = Router();
 // Todas as rotas de radar exigem autenticação
 radarRouter.use(requireAuth);
 
-radarRouter.get('/alertas', asyncHandler(async (_req, res) => {
+radarRouter.get('/alertas', asyncHandler(async (req, res) => {
+  const userId = getAuthenticatedUser(req).id;
   const [leads, interacoesLista, config] = await Promise.all([
-    listarLeads({ ordenarPor: 'data', ordem: 'asc' }),
-    listarInteracoes(),
-    obterConfiguracao()
+    listarLeads({ ordenarPor: 'data', ordem: 'asc' }, userId),
+    listarInteracoes(userId),
+    obterConfiguracao(userId)
   ]);
   
   const interacoesPorLead = new Map<number, Interacao[]>();
@@ -33,15 +34,15 @@ radarRouter.get('/alertas', asyncHandler(async (_req, res) => {
   res.json(alertas);
 }));
 
-radarRouter.get('/metricas', asyncHandler(async (_req, res) => {
-  const leads = await listarLeads();
+radarRouter.get('/metricas', asyncHandler(async (req, res) => {
+  const leads = await listarLeads({}, getAuthenticatedUser(req).id);
   const metricas = calcularMetricas(leads);
 
   res.json(metricas);
 }));
 
-radarRouter.get('/motivos-perda', asyncHandler(async (_req, res) => {
-  const leads = await listarLeads({ status: 'perdido' });
+radarRouter.get('/motivos-perda', asyncHandler(async (req, res) => {
+  const leads = await listarLeads({ status: 'perdido' }, getAuthenticatedUser(req).id);
   const motivos = calcularMotivosPerda(leads);
 
   res.json(motivos);

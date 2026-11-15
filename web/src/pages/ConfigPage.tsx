@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { apiFetch } from '../api/client.js';
-import { Configuracao } from '@radar/shared';
+import type { Configuracao, UserSummary } from '@radar/shared';
 import { LoadingState, ErrorState } from '../components/FeedbackStates.js';
+import { useAuth } from '../context/AuthContext.js';
 
 export const ConfigPage: React.FC = () => {
+  const { provider, user } = useAuth();
   const [config, setConfig] = useState<Configuracao | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
@@ -17,6 +19,13 @@ export const ConfigPage: React.FC = () => {
   const [trocandoSenha, setTrocandoSenha] = useState(false);
   const [erroSenha, setErroSenha] = useState<string | null>(null);
   const [sucessoSenha, setSucessoSenha] = useState<string | null>(null);
+  const [usuarios, setUsuarios] = useState<UserSummary[]>([]);
+  const [emailConvite, setEmailConvite] = useState('');
+  const [enviandoConvite, setEnviandoConvite] = useState(false);
+  const [erroConvite, setErroConvite] = useState<string | null>(null);
+  const [sucessoConvite, setSucessoConvite] = useState<string | null>(null);
+  const [erroUsuarios, setErroUsuarios] = useState<string | null>(null);
+  const [carregandoUsuarios, setCarregandoUsuarios] = useState(false);
 
   // Importação e Exportação
   const [importando, setImportando] = useState(false);
@@ -39,6 +48,27 @@ export const ConfigPage: React.FC = () => {
   useEffect(() => {
     carregarConfig();
   }, []);
+
+  useEffect(() => {
+    if (provider !== 'supabase' || user?.role !== 'admin') return;
+
+    let active = true;
+    setCarregandoUsuarios(true);
+    apiFetch<UserSummary[]>('/auth/users')
+      .then(data => {
+        if (active) setUsuarios(data);
+      })
+      .catch(err => {
+        if (active) setErroUsuarios(err instanceof Error ? err.message : 'Falha ao carregar usuários.');
+      })
+      .finally(() => {
+        if (active) setCarregandoUsuarios(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [provider, user?.id, user?.role]);
 
   const handleSalvarLimites = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,8 +94,9 @@ export const ConfigPage: React.FC = () => {
     setErroSenha(null);
     setSucessoSenha(null);
 
-    if (novaSenha.length < 6) {
-      setErroSenha('A nova senha deve ter no mínimo 6 caracteres.');
+    const tamanhoMinimo = provider === 'supabase' ? 8 : 6;
+    if (novaSenha.length < tamanhoMinimo) {
+      setErroSenha(`A nova senha deve ter no mínimo ${tamanhoMinimo} caracteres.`);
       return;
     }
 
@@ -78,7 +109,7 @@ export const ConfigPage: React.FC = () => {
       setTrocandoSenha(true);
       await apiFetch('/auth/senha', {
         method: 'PUT',
-        body: JSON.stringify({ senhaAtual, novaSenha })
+        body: JSON.stringify(provider === 'supabase' ? { novaSenha } : { senhaAtual, novaSenha })
       });
       setSucessoSenha('Senha alterada com sucesso!');
       setSenhaAtual('');
@@ -88,6 +119,32 @@ export const ConfigPage: React.FC = () => {
       setErroSenha(err.message || 'Erro ao trocar senha');
     } finally {
       setTrocandoSenha(false);
+    }
+  };
+
+  const handleConvidarUsuario = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErroConvite(null);
+    setSucessoConvite(null);
+    setErroUsuarios(null);
+
+    try {
+      setEnviandoConvite(true);
+      const resultado = await apiFetch<{ message: string }>('/auth/invitations', {
+        method: 'POST',
+        body: JSON.stringify({ email: emailConvite })
+      });
+      setSucessoConvite(resultado.message);
+      setEmailConvite('');
+      try {
+        setUsuarios(await apiFetch<UserSummary[]>('/auth/users'));
+      } catch (err) {
+        setErroUsuarios(err instanceof Error ? err.message : 'Convite enviado, mas a lista de usuários não pôde ser atualizada.');
+      }
+    } catch (err) {
+      setErroConvite(err instanceof Error ? err.message : 'Falha ao enviar convite.');
+    } finally {
+      setEnviandoConvite(false);
     }
   };
 
@@ -367,7 +424,9 @@ export const ConfigPage: React.FC = () => {
               Segurança: Trocar Senha
             </h3>
             <p style={{ fontSize: '13px', color: 'var(--muted-foreground)', marginBottom: '18px' }}>
-              Altere a senha de acesso ao seu Radar de Leads.
+              {provider === 'supabase'
+                ? 'Altere a senha da sua conta.'
+                : 'Altere a senha de acesso ao seu Radar de Leads.'}
             </p>
 
             {erroSenha && (
@@ -399,21 +458,23 @@ export const ConfigPage: React.FC = () => {
             )}
 
             <form onSubmit={handleTrocarSenha}>
-              <div className="form-group">
-                <label className="form-label" htmlFor="senha-atual">Senha Atual</label>
-                <input
-                  id="senha-atual"
-                  type="password"
-                  className="form-input"
-                  value={senhaAtual}
-                  onChange={e => setSenhaAtual(e.target.value)}
-                  autoComplete="current-password"
-                  required
-                />
-              </div>
+              {provider === 'sqlite' && (
+                <div className="form-group">
+                  <label className="form-label" htmlFor="senha-atual">Senha Atual</label>
+                  <input
+                    id="senha-atual"
+                    type="password"
+                    className="form-input"
+                    value={senhaAtual}
+                    onChange={e => setSenhaAtual(e.target.value)}
+                    autoComplete="current-password"
+                    required
+                  />
+                </div>
+              )}
 
               <div className="form-group">
-                <label className="form-label" htmlFor="nova-senha">Nova Senha (mínimo 6 caracteres)</label>
+                <label className="form-label" htmlFor="nova-senha">Nova Senha (mínimo {provider === 'supabase' ? 8 : 6} caracteres)</label>
                 <input
                   id="nova-senha"
                   type="password"
@@ -421,6 +482,7 @@ export const ConfigPage: React.FC = () => {
                   value={novaSenha}
                   onChange={e => setNovaSenha(e.target.value)}
                   autoComplete="new-password"
+                  minLength={provider === 'supabase' ? 8 : 6}
                   required
                 />
               </div>
@@ -447,6 +509,70 @@ export const ConfigPage: React.FC = () => {
               </button>
             </form>
           </div>
+
+          {provider === 'supabase' && user?.role === 'admin' && (
+            <section className="config-section" aria-labelledby="usuarios-title">
+              <h3 id="usuarios-title" style={{ fontSize: '16px', fontWeight: 700, color: 'var(--foreground)', marginBottom: '4px' }}>
+                Usuários e convites
+              </h3>
+              <p style={{ fontSize: '13px', color: 'var(--muted-foreground)', marginBottom: '18px' }}>
+                Convide pessoas por e-mail. Cada conta acessa somente os próprios leads e configurações.
+              </p>
+
+              {erroConvite && <div className="config-message error" role="alert">{erroConvite}</div>}
+              {sucessoConvite && <div className="config-message success" role="status">{sucessoConvite}</div>}
+              {erroUsuarios && <div className="config-message error" role="alert">{erroUsuarios}</div>}
+
+              <form onSubmit={handleConvidarUsuario} style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'end' }}>
+                <div className="form-group" style={{ flex: '1 1 240px', marginBottom: 0 }}>
+                  <label className="form-label" htmlFor="email-convite">E-mail do novo usuário</label>
+                  <input
+                    id="email-convite"
+                    type="email"
+                    className="form-input"
+                    value={emailConvite}
+                    onChange={e => setEmailConvite(e.target.value)}
+                    autoComplete="email"
+                    placeholder="nome@exemplo.com"
+                    required
+                  />
+                </div>
+                <button type="submit" className="btn-acao primary" disabled={enviandoConvite}>
+                  {enviandoConvite ? 'Enviando...' : 'Enviar convite'}
+                </button>
+              </form>
+
+              <h4 style={{ fontSize: '12px', fontWeight: 700, color: 'var(--muted-foreground)', margin: '22px 0 8px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                Contas cadastradas
+              </h4>
+              {carregandoUsuarios ? (
+                <p style={{ color: 'var(--muted-foreground)', fontSize: '13px' }}>Carregando usuários...</p>
+              ) : usuarios.length > 0 ? (
+                <ul style={{ listStyle: 'none', borderTop: '1px solid var(--line)' }}>
+                  {usuarios.map(usuario => (
+                    <li key={usuario.id} style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      gap: '12px',
+                      padding: '10px 0',
+                      borderBottom: '1px solid var(--line-soft)',
+                      fontSize: '13px'
+                    }}>
+                      <span style={{ overflowWrap: 'anywhere', color: 'var(--foreground)' }}>
+                        {usuario.email || 'E-mail indisponível'}
+                      </span>
+                      <span style={{ color: 'var(--muted-foreground)', whiteSpace: 'nowrap' }}>
+                        {usuario.role === 'admin' ? 'Administrador' : 'Usuário'}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p style={{ color: 'var(--muted-foreground)', fontSize: '13px' }}>Nenhum usuário cadastrado.</p>
+              )}
+            </section>
+          )}
         </div>
       )}
     </div>

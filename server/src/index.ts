@@ -19,10 +19,11 @@ import { assertJwtSecretConfigured } from './services/authService.js';
 const app = express();
 const PORT = Number(process.env.PORT) || 3001;
 const HOST = process.env.HOST || '0.0.0.0';
+const appOrigin = getAppOrigin();
 
 // Middlewares essenciais
 app.use(cors({
-  origin: true,
+  origin: appOrigin,
   credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));
@@ -63,9 +64,8 @@ if (webDistPath) {
 app.use(errorHandler);
 
 async function startServer(): Promise<void> {
-  assertJwtSecretConfigured();
-
   if (getDatabaseProvider() === 'sqlite') {
+    assertJwtSecretConfigured();
     runMigrations(getDb());
   } else {
     await assertSupabaseSchemaReady();
@@ -81,3 +81,19 @@ void startServer().catch(error => {
   console.error('Falha ao iniciar o backend:', error);
   process.exitCode = 1;
 });
+
+function getAppOrigin(): string | true {
+  if (process.env.NODE_ENV !== 'production') return true;
+
+  const appUrl = process.env.APP_URL?.trim();
+  if (!appUrl) throw new Error('APP_URL precisa ser configurada em produção.');
+
+  let url: URL;
+  try {
+    url = new URL(appUrl);
+  } catch {
+    throw new Error('APP_URL deve ser uma URL válida.');
+  }
+  if (url.protocol !== 'https:') throw new Error('APP_URL deve usar HTTPS em produção.');
+  return url.origin;
+}

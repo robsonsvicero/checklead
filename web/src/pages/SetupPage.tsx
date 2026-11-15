@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.js';
+import { LoadingState } from '../components/FeedbackStates.js';
 
 export const SetupPage: React.FC = () => {
   const [senha, setSenha] = useState('');
@@ -8,8 +9,20 @@ export const SetupPage: React.FC = () => {
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
-  const { setup } = useAuth();
+  const { setup, provider, loading } = useAuth();
   const navigate = useNavigate();
+
+  if (loading) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <LoadingState mensagem="Verificando autenticação..." />
+      </div>
+    );
+  }
+
+  if (provider === 'supabase') {
+    return <Navigate to="/login" replace />;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

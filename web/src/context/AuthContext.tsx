@@ -1,13 +1,15 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { apiFetch } from '../api/client.js';
-import { AuthStatus } from '@radar/shared';
+import type { AuthStatus, AuthUser } from '@radar/shared';
 
 interface AuthContextType {
   hasUser: boolean;
   authenticated: boolean;
+  provider: AuthStatus['provider'];
+  user: AuthUser | null;
   loading: boolean;
   checkAuth: () => Promise<void>;
-  login: (senha: string) => Promise<void>;
+  login: (credentials: { email?: string; senha: string }) => Promise<void>;
   setup: (senha: string) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -17,6 +19,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [hasUser, setHasUser] = useState<boolean>(true);
   const [authenticated, setAuthenticated] = useState<boolean>(false);
+  const [provider, setProvider] = useState<AuthStatus['provider']>('sqlite');
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
   const checkAuth = async () => {
@@ -25,9 +29,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const data = await apiFetch<AuthStatus>('/auth/status');
       setHasUser(data.hasUser);
       setAuthenticated(data.authenticated);
+      setProvider(data.provider);
+      setUser(data.user);
     } catch (err) {
       console.error('Falha ao verificar status de autenticação:', err);
       setAuthenticated(false);
+      setUser(null);
     } finally {
       setLoading(false);
     }
@@ -37,12 +44,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     checkAuth();
   }, []);
 
-  const login = async (senha: string) => {
+  const login = async (credentials: { email?: string; senha: string }) => {
     await apiFetch('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ senha })
+      body: JSON.stringify(credentials)
     });
-    setAuthenticated(true);
+    await checkAuth();
   };
 
   const setup = async (senha: string) => {
@@ -50,8 +57,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       method: 'POST',
       body: JSON.stringify({ senha })
     });
-    setHasUser(true);
-    setAuthenticated(true);
+    await checkAuth();
   };
 
   const logout = async () => {
@@ -59,11 +65,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await apiFetch('/auth/logout', { method: 'POST' });
     } finally {
       setAuthenticated(false);
+      setUser(null);
     }
   };
 
   return (
-    <AuthContext.Provider value={{ hasUser, authenticated, loading, checkAuth, login, setup, logout }}>
+    <AuthContext.Provider value={{ hasUser, authenticated, provider, user, loading, checkAuth, login, setup, logout }}>
       {children}
     </AuthContext.Provider>
   );

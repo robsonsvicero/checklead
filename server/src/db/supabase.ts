@@ -51,16 +51,44 @@ export function getSupabaseClient(): SupabaseClient {
   return client;
 }
 
+export function createSupabaseAuthClient(): SupabaseClient {
+  if (getDatabaseProvider() !== 'supabase') {
+    throw new Error('O provedor de banco configurado não é Supabase.');
+  }
+
+  const url = process.env.SUPABASE_URL?.trim();
+  const secretKey = process.env.SUPABASE_SECRET_KEY?.trim()
+    || process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+
+  if (!url || !secretKey) {
+    throw new Error('Configure SUPABASE_URL e SUPABASE_SECRET_KEY no servidor.');
+  }
+
+  return createClient(url, secretKey, {
+    auth: {
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+      persistSession: false
+    }
+  });
+}
+
 export async function assertSupabaseSchemaReady(): Promise<void> {
   const { data, error } = await getSupabaseClient()
     .from('configuracoes')
-    .select('id')
+    .select('id, user_id')
     .eq('id', 1)
     .maybeSingle();
   throwSupabaseError(error);
   if (!data) {
     throw new Error('Schema do Supabase não encontrado. Execute a migração SQL antes de iniciar a API.');
   }
+
+  const { error: profilesError } = await getSupabaseClient()
+    .from('perfis')
+    .select('id')
+    .limit(1);
+  throwSupabaseError(profilesError);
 }
 
 export function throwSupabaseError(error: { message: string } | null): void {

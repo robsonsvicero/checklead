@@ -21,7 +21,7 @@ export function gerarModeloCsvVazio(): string {
   return '\uFEFF' + colunas.join(';') + '\r\n';
 }
 
-export async function importarPlanilhaCsv(conteudoCsv: string): Promise<{ totalImportados: number; totalIgnorados: number }> {
+export async function importarPlanilhaCsv(conteudoCsv: string, userId: string): Promise<{ totalImportados: number; totalIgnorados: number }> {
   const textoLimpo = conteudoCsv.replace(/^\uFEFF/, '').trim();
   if (!textoLimpo) {
     throw new Error('A planilha enviada está vazia.');
@@ -118,6 +118,7 @@ export async function importarPlanilhaCsv(conteudoCsv: string): Promise<{ totalI
 
   if (getDatabaseProvider() === 'supabase') {
     const { data, error } = await getSupabaseClient().rpc('importar_leads_em_lote', {
+      p_user_id: userId,
       p_leads: leadsImportados
     });
     throwSupabaseError(error);
@@ -235,21 +236,21 @@ function parseLinhasCsv(texto: string, sep: string): string[][] {
   return linhas;
 }
 
-export async function gerarExportacaoJson(): Promise<ExportData> {
+export async function gerarExportacaoJson(userId: string): Promise<ExportData> {
   let configuracao: Awaited<ReturnType<typeof obterConfiguracao>>;
   let leads: Lead[];
   let interacoes: Interacao[];
 
   if (getDatabaseProvider() === 'supabase') {
     [configuracao, leads, interacoes] = await Promise.all([
-      obterConfiguracao(),
-      listarLeads({ ordenarPor: 'data', ordem: 'asc' }),
-      listarInteracoes()
+      obterConfiguracao(userId),
+      listarLeads({ ordenarPor: 'data', ordem: 'asc' }, userId),
+      listarInteracoes(userId)
     ]);
   } else {
     const db = getDb();
     [configuracao, leads, interacoes] = await Promise.all([
-      obterConfiguracao(),
+      obterConfiguracao(userId),
       Promise.resolve(db.prepare('SELECT * FROM leads ORDER BY id ASC').all() as unknown as Lead[]),
       Promise.resolve(db.prepare('SELECT * FROM interacoes ORDER BY id ASC').all() as unknown as Interacao[])
     ]);
@@ -264,9 +265,9 @@ export async function gerarExportacaoJson(): Promise<ExportData> {
   };
 }
 
-export async function gerarExportacaoCsv(): Promise<string> {
+export async function gerarExportacaoCsv(userId: string): Promise<string> {
   const leads = getDatabaseProvider() === 'supabase'
-    ? await listarLeads({ ordenarPor: 'data', ordem: 'asc' })
+    ? await listarLeads({ ordenarPor: 'data', ordem: 'asc' }, userId)
     : getDb().prepare('SELECT * FROM leads ORDER BY id ASC').all() as unknown as Lead[];
 
   const colunas = [
@@ -324,7 +325,7 @@ function escapeCsv(valor: string | number): string {
   return str;
 }
 
-export async function importarBackupJson(conteudo: unknown): Promise<{ totalLeads: number; totalInteracoes: number }> {
+export async function importarBackupJson(conteudo: unknown, userId: string): Promise<{ totalLeads: number; totalInteracoes: number }> {
   if (typeof conteudo !== 'object' || conteudo === null) {
     throw new Error('Formato de JSON inválido');
   }
@@ -336,6 +337,7 @@ export async function importarBackupJson(conteudo: unknown): Promise<{ totalLead
 
   if (getDatabaseProvider() === 'supabase') {
     const { data: resultado, error } = await getSupabaseClient().rpc('restaurar_backup', {
+      p_user_id: userId,
       p_backup: data
     });
     throwSupabaseError(error);

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
-import { requireAuth } from '../middlewares/auth.js';
+import { getAuthenticatedUser, requireAuth } from '../middlewares/auth.js';
 import {
   CriarLeadSchema,
   AtualizarLeadSchema,
@@ -21,6 +21,7 @@ leadRouter.use(requireAuth);
 
 leadRouter.get('/', asyncHandler(async (req, res) => {
   const { status, origem, busca, ordenarPor, ordem } = req.query;
+  const user = getAuthenticatedUser(req);
 
   const leads = await listarLeads({
     status: typeof status === 'string' ? status : undefined,
@@ -28,20 +29,20 @@ leadRouter.get('/', asyncHandler(async (req, res) => {
     busca: typeof busca === 'string' ? busca : undefined,
     ordenarPor: ordenarPor === 'valor' ? 'valor' : 'data',
     ordem: ordem === 'asc' ? 'asc' : 'desc'
-  });
+  }, user.id);
 
   res.json(leads);
 }));
 
 leadRouter.post('/', asyncHandler(async (req, res) => {
   const body = CriarLeadSchema.parse(req.body);
-  const lead = await criarLead(body);
+  const lead = await criarLead(body, getAuthenticatedUser(req).id);
   res.status(201).json(lead);
 }));
 
 leadRouter.get('/:id', asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
-  const lead = await obterLeadPorId(id);
+  const lead = await obterLeadPorId(id, getAuthenticatedUser(req).id);
   if (!lead) {
     res.status(404).json({ error: 'Lead não encontrado' });
     return;
@@ -53,7 +54,7 @@ leadRouter.patch('/:id', asyncHandler(async (req, res, next) => {
   const id = Number(req.params.id);
   const body = AtualizarLeadSchema.parse(req.body);
   try {
-    const lead = await atualizarLead(id, body);
+    const lead = await atualizarLead(id, body, getAuthenticatedUser(req).id);
     res.json(lead);
   } catch (err: any) {
     if (err.message === 'Lead não encontrado') {
@@ -68,7 +69,7 @@ leadRouter.post('/:id/acoes', asyncHandler(async (req, res, next) => {
   const id = Number(req.params.id);
   const body = AcaoLeadSchema.parse(req.body);
   try {
-    const lead = await executarAcaoLead(id, body);
+    const lead = await executarAcaoLead(id, body, getAuthenticatedUser(req).id);
     res.json(lead);
   } catch (err: any) {
     if (err.message === 'Lead não encontrado') {
@@ -81,7 +82,7 @@ leadRouter.post('/:id/acoes', asyncHandler(async (req, res, next) => {
 
 leadRouter.delete('/:id', asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
-  const ok = await excluirLead(id);
+  const ok = await excluirLead(id, getAuthenticatedUser(req).id);
   if (!ok) {
     res.status(404).json({ error: 'Lead não encontrado' });
     return;

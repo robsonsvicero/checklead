@@ -82,6 +82,18 @@ export interface MotivoPerdaItem {
 export interface AuthStatus {
   hasUser: boolean;
   authenticated: boolean;
+  provider: 'sqlite' | 'supabase';
+  user: AuthUser | null;
+}
+
+export interface AuthUser {
+  id: string;
+  email: string | null;
+  role: 'admin' | 'user';
+}
+
+export interface UserSummary extends AuthUser {
+  created_at: string;
 }
 
 export interface ExportData {

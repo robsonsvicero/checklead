@@ -35,7 +35,7 @@ npm run dev
 - **Backend (API)**: `http://localhost:3001`
 - **Frontend (Web)**: `http://localhost:5173`
 
-Na primeira execução, o sistema exibirá automaticamente a tela para você **definir sua senha mestre**.
+No modo local, a primeira execução exibe a tela para definir uma senha mestre. O SQLite local continua sendo uma instalação de usuário único.
 
 ---
 
@@ -60,21 +60,66 @@ Em desenvolvimento, o backend usa SQLite em `server/radar.sqlite`. O antigo cami
 
 ### Configurar o Supabase
 1. Crie um projeto Supabase.
-2. No **SQL Editor**, execute [`supabase/migrations/202611140001_initial_schema.sql`](./supabase/migrations/202611140001_initial_schema.sql).
-3. Configure estas variáveis no ambiente do backend (na Hostinger, em **Avançado > Node.js > Variáveis de ambiente**):
+2. No **SQL Editor**, execute [`supabase/migrations/202611140001_initial_schema.sql`](./supabase/migrations/202611140001_initial_schema.sql) e, em seguida, [`supabase/migrations/202611150001_multi_user_auth.sql`](./supabase/migrations/202611150001_multi_user_auth.sql).
+3. Antes de criar qualquer conta, desative o cadastro público em **Authentication > Settings > User Signups**.
+4. Crie a conta administradora pelo painel em **Authentication > Users > Add user**. Se já existirem contas Auth, escolha explicitamente qual delas será administradora.
+5. No SQL Editor, substitua `admin@exemplo.com` pelo e-mail escolhido e execute este bloco. Ele promove a conta e atribui a ela os leads, interações e configurações existentes:
+
+   ```sql
+   DO $$
+   DECLARE
+     admin_id uuid;
+   BEGIN
+     SELECT id INTO admin_id
+     FROM public.perfis
+     WHERE lower(email) = lower('admin@exemplo.com');
+
+     IF admin_id IS NULL THEN
+       RAISE EXCEPTION 'O e-mail informado não possui uma conta Supabase Auth.';
+     END IF;
+
+     UPDATE public.perfis SET role = 'admin' WHERE id = admin_id;
+     UPDATE public.leads SET user_id = admin_id WHERE user_id IS NULL;
+     UPDATE public.interacoes AS i
+     SET user_id = l.user_id
+     FROM public.leads AS l
+     WHERE i.lead_id = l.id AND i.user_id IS NULL AND l.user_id = admin_id;
+
+     IF EXISTS (
+       SELECT 1 FROM public.configuracoes WHERE id = 1 AND user_id IS NULL
+     ) THEN
+       DELETE FROM public.configuracoes
+       WHERE user_id = admin_id AND id <> 1;
+       UPDATE public.configuracoes SET user_id = admin_id
+       WHERE id = 1 AND user_id IS NULL;
+     END IF;
+
+     IF EXISTS (SELECT 1 FROM public.configuracoes WHERE user_id IS NULL) THEN
+       RAISE EXCEPTION 'Há configurações sem proprietário além da configuração legada (id = 1). Verifique public.configuracoes antes de continuar.';
+     END IF;
+
+     ALTER TABLE public.leads ALTER COLUMN user_id SET NOT NULL;
+     ALTER TABLE public.interacoes ALTER COLUMN user_id SET NOT NULL;
+     ALTER TABLE public.configuracoes ALTER COLUMN user_id SET NOT NULL;
+   END
+   $$;
+   ```
+
+6. Configure estas variáveis no ambiente do backend (na Hostinger, em **Avançado > Node.js > Variáveis de ambiente**):
    - `NODE_ENV=production`
    - `DATABASE_PROVIDER=supabase`
    - `SUPABASE_URL` — URL do projeto
    - `SUPABASE_SECRET_KEY` — a nova chave **Secret** do backend (`sb_secret_...`); nunca a coloque no frontend, em variáveis `VITE_*` ou no Git
-   - `JWT_SECRET` — segredo aleatório para assinar os cookies de sessão
-4. Reinicie o aplicativo. Sem essas configurações, o backend falha explicitamente em vez de gravar em SQLite temporário.
+   - `APP_URL` — URL pública do app, por exemplo `https://checklead.robsonsvicero.com.br`; usada para direcionar os convites
+7. Configure o SMTP em **Authentication > SMTP Settings** e permita a URL `https://checklead.robsonsvicero.com.br/login?convite=1` em **Authentication > URL Configuration**. Para desenvolvimento local, permita também `http://localhost:5173/login?convite=1`.
+8. Coloque o app em manutenção durante a aplicação da migração e a publicação do código atualizado: a nova versão exige o schema multiusuário. Depois, reinicie o aplicativo. Sem essas configurações, o backend falha explicitamente em vez de gravar em SQLite temporário.
 
-Gere o `JWT_SECRET` localmente com `node -e "console.log(require('node:crypto').randomBytes(48).toString('base64url'))"` e cadastre o resultado diretamente no ambiente do servidor.
+`JWT_SECRET` só é usado pelo login local em SQLite; o modo Supabase usa os tokens de sessão do Supabase Auth em cookies HTTP-only.
 
 Para desenvolvimento local, copie `server/.env.example` para `server/.env`. Mantenha `DATABASE_PROVIDER=sqlite` até configurar o Supabase. Se já tiver `SUPABASE_SERVICE_ROLE_KEY` no `.env`, ela ainda é aceita temporariamente, mas prefira migrar para a nova variável `SUPABASE_SECRET_KEY`.
 
 ### Migrar os dados locais
-O banco SQLite local não é enviado automaticamente. Depois de aplicar a migração SQL e configurar as variáveis Supabase localmente em `server/.env`, faça primeiro uma prévia:
+O banco SQLite local não é enviado automaticamente. Depois de criar a conta destino no Supabase Auth e aplicar as duas migrações SQL, configure `DATABASE_PROVIDER=supabase`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY` e `SUPABASE_MIGRATION_USER_ID` (UUID da conta destino) no ambiente usado pelo comando. Faça primeiro uma prévia:
 
 ```bash
 npm run migrate:supabase --workspace=server -- --dry-run
@@ -86,9 +131,9 @@ Se os totais estiverem corretos, execute a migração:
 npm run migrate:supabase --workspace=server
 ```
 
-A migração preserva IDs, leads, interações, configurações e o hash da senha. Ela não apaga dados do SQLite e é recusada se o Supabase já tiver leads, interações ou usuário. O comando de prévia só mostra contagens e não envia dados.
+A migração copia leads, interações e configurações para a conta informada e não apaga dados do SQLite nem envia o antigo hash da senha. Os IDs podem ser regenerados para evitar colisões entre usuários. A execução é recusada se a conta destino já tiver leads ou interações. O comando de prévia só mostra contagens e não envia dados.
 
-Se os leads estiverem apenas no servidor antigo, exporte o **Backup JSON Completo** antes do próximo deploy. Depois de conectar o Supabase, restaure esse arquivo pela interface em **Ajustes**; faça isso somente com a base Supabase vazia, pois a restauração substitui a lista de leads e interações. O backup da interface não inclui a senha, então será necessário configurar uma nova.
+Se os leads estiverem apenas no servidor antigo, exporte o **Backup JSON Completo** antes do próximo deploy. Depois de conectar o Supabase, restaure esse arquivo pela interface em **Ajustes**; a restauração substitui apenas os leads e interações da conta autenticada. O backup não inclui senhas.
 
 ### Backup manual
 Na interface, acesse **Ajustes > Planilha de Leads & Backup** para exportar CSV ou um backup JSON completo. Guarde os arquivos em local seguro.
@@ -148,7 +193,10 @@ npm start
 ---
 
 ## 🔒 Segurança e Privacidade
-- **Sessão segura**: Senha criptografada com `bcrypt` (10 rounds de salt) e sessão mantida via cookie HTTP-only ou token seguro.
+- **Contas individuais**: Supabase Auth com e-mail e senha; não há cadastro público. Administradores enviam convites pelo app.
+- **Sessão segura**: tokens do Supabase Auth são mantidos em cookies HTTP-only, `Secure` em produção.
+- **Isolamento de dados**: cada consulta, importação, exportação, backup e alteração é limitada ao usuário autenticado. As tabelas também usam RLS e políticas por proprietário.
+- **Modo local**: SQLite continua usando a senha mestre única, protegida por `bcrypt`.
 - **Proteção contra força bruta**: Limitador de tentativas de login (rate limiting).
-- **Proteção contra SQL Injection**: SQLite usa *prepared statements*; o Supabase é acessado apenas pelo backend autenticado.
+- **Proteção contra SQL Injection**: SQLite usa *prepared statements*; o Supabase é acessado somente pelo backend.
 - **Chaves protegidas**: A chave `service_role` fica somente no ambiente do servidor; as tabelas Supabase têm RLS habilitado e sem acesso público.

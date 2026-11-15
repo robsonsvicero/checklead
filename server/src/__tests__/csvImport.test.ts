@@ -35,7 +35,7 @@ Carlos Silva;11988887777;carlos@email.com;Mariana;Reforma de Banheiro;2.500,00;I
 Ana Costa;;ana@empresa.com;Robson;Consultoria;1500;indicação;orcamento_enviado;
 `;
 
-    const res = await importarPlanilhaCsv(csv);
+    const res = await importarPlanilhaCsv(csv, 'local-owner');
     expect(res.totalImportados).toBe(2);
     expect(res.totalIgnorados).toBe(0);
 
@@ -64,7 +64,7 @@ João Souza,11999991111,Site,500,site
 ,,Serviço sem cliente,100,outro
 `;
 
-    const res = await importarPlanilhaCsv(csv);
+    const res = await importarPlanilhaCsv(csv, 'local-owner');
     expect(res.totalImportados).toBe(1);
     expect(res.totalIgnorados).toBe(1);
   });

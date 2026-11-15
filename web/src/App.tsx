@@ -13,7 +13,7 @@ import { PerdasPage } from './pages/PerdasPage.js';
 import { ConfigPage } from './pages/ConfigPage.js';
 
 const ProtectedLayout: React.FC = () => {
-  const { authenticated, hasUser, loading } = useAuth();
+  const { authenticated, hasUser, provider, loading } = useAuth();
   const [totalAlertas, setTotalAlertas] = useState(0);
 
   if (loading) {
@@ -24,7 +24,7 @@ const ProtectedLayout: React.FC = () => {
     );
   }
 
-  if (!hasUser) {
+  if (provider === 'sqlite' && !hasUser) {
     return <Navigate to="/setup" replace />;
   }
 

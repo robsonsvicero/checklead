@@ -83,6 +83,25 @@ export const LoginSchema = z.object({
   senha: z.string().min(1, 'Informe a senha')
 });
 
+export const EmailLoginSchema = z.object({
+  email: z.string().trim().email('Informe um e-mail válido'),
+  senha: z.string().min(1, 'Informe a senha')
+});
+
+export const InviteEmailSchema = z.object({
+  email: z.string().trim().email('Informe um e-mail válido').transform(email => email.toLowerCase())
+});
+
+export const CompleteInvitationSchema = z.object({
+  accessToken: z.string().min(20),
+  refreshToken: z.string().min(20),
+  novaSenha: z.string().min(8, 'A senha deve ter pelo menos 8 caracteres')
+});
+
+export const AlterarSenhaSchema = z.object({
+  novaSenha: z.string().min(8, 'A senha deve ter pelo menos 8 caracteres')
+});
+
 export const TrocarSenhaSchema = z.object({
   senhaAtual: z.string().min(1, 'Informe a senha atual'),
   novaSenha: z.string().min(6, 'A nova senha deve ter pelo menos 6 caracteres')

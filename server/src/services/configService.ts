@@ -2,12 +2,12 @@ import { getDb } from '../db/connection.js';
 import { Configuracao, ConfiguracaoDTO } from '@radar/shared';
 import { getDatabaseProvider, getSupabaseClient, throwSupabaseError } from '../db/supabase.js';
 
-export async function obterConfiguracao(): Promise<Configuracao> {
+export async function obterConfiguracao(userId: string): Promise<Configuracao> {
   if (getDatabaseProvider() === 'supabase') {
     const { data, error } = await getSupabaseClient()
       .from('configuracoes')
       .select('limite_sem_resposta_horas, limite_follow_up_dias, limite_lead_parado_dias')
-      .eq('id', 1)
+      .eq('user_id', userId)
       .maybeSingle();
     throwSupabaseError(error);
     if (!data) return configuracaoPadrao();
@@ -33,13 +33,13 @@ export async function obterConfiguracao(): Promise<Configuracao> {
   };
 }
 
-export async function atualizarConfiguracao(dados: ConfiguracaoDTO): Promise<Configuracao> {
+export async function atualizarConfiguracao(dados: ConfiguracaoDTO, userId: string): Promise<Configuracao> {
   if (getDatabaseProvider() === 'supabase') {
     const { error } = await getSupabaseClient()
       .from('configuracoes')
-      .upsert({ id: 1, ...dados, atualizado_em: new Date().toISOString() }, { onConflict: 'id' });
+      .upsert({ user_id: userId, ...dados, atualizado_em: new Date().toISOString() }, { onConflict: 'user_id' });
     throwSupabaseError(error);
-    return obterConfiguracao();
+    return obterConfiguracao(userId);
   }
 
   const db = getDb();
@@ -59,7 +59,7 @@ export async function atualizarConfiguracao(dados: ConfiguracaoDTO): Promise<Con
     agora
   );
 
-  return obterConfiguracao();
+  return obterConfiguracao(userId);
 }
 
 function configuracaoPadrao(): Configuracao {
