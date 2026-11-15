@@ -54,22 +54,44 @@ Tanto o frontend (Vite) quanto o backend (Express) já estão configurados para 
 
 ---
 
-## 💾 Como Fazer Backup do Banco de Dados SQLite
+## 💾 Persistência e Backup
 
-O banco de dados SQLite armazena todos os seus dados em um único arquivo local. Nenhum dado é enviado para servidores de terceiros.
+Em desenvolvimento, o backend usa SQLite em `server/radar.sqlite`. O antigo caminho dependia do diretório de inicialização: a Hostinger iniciava `app.js` pela raiz e acabava usando outro arquivo SQLite, que também não é garantido entre deploys. Em produção, use Supabase para manter os dados fora dos arquivos do deploy. O servidor recusa iniciar em produção sem `DATABASE_PROVIDER=supabase`, evitando voltar silenciosamente a um banco local efêmero.
 
-### Opção 1: Cópia Direta do Arquivo (Mais simples e seguro)
-1. Pare o servidor (`Ctrl + C`).
-2. Copie o arquivo `radar.sqlite` localizado na pasta raiz ou em `server/radar.sqlite`.
-3. Guarde esse arquivo em um pendrive, Google Drive, Dropbox ou pasta segura.
-4. Para restaurar, basta recolocar o arquivo `radar.sqlite` no mesmo local.
+### Configurar o Supabase
+1. Crie um projeto Supabase.
+2. No **SQL Editor**, execute [`supabase/migrations/202611140001_initial_schema.sql`](./supabase/migrations/202611140001_initial_schema.sql).
+3. Configure estas variáveis no ambiente do backend (na Hostinger, em **Avançado > Node.js > Variáveis de ambiente**):
+   - `NODE_ENV=production`
+   - `DATABASE_PROVIDER=supabase`
+   - `SUPABASE_URL` — URL do projeto
+   - `SUPABASE_SECRET_KEY` — a nova chave **Secret** do backend (`sb_secret_...`); nunca a coloque no frontend, em variáveis `VITE_*` ou no Git
+   - `JWT_SECRET` — segredo aleatório para assinar os cookies de sessão
+4. Reinicie o aplicativo. Sem essas configurações, o backend falha explicitamente em vez de gravar em SQLite temporário.
 
-### Opção 2: Importação e Exportação via Interface (CSV e JSON)
-1. Acesse o menu **Ajustes** (Configurações) no Radar de Leads.
-2. Na seção **"Planilha de Leads & Backup"**:
-   - Clique em **"📥 Baixar Planilha Modelo Vazia"** para obter o arquivo `.csv` já com os nomes e padrão das colunas (`Nome`, `WhatsApp`, `E-mail`, `Responsável`, `Serviço`, `Valor Estimado (R$)`, `Origem`, `Status`, `Motivo da Perda`).
-   - Clique em **"📤 Fazer Upload de Planilha (.csv)"** para subir sua lista de leads pronta e importar tudo de uma só vez para o sistema.
-3. Você também pode exportar os dados a qualquer momento em **"Baixar Planilha Atual (CSV)"** para abrir no Excel ou em **"Baixar Backup JSON Completo"**.
+Gere o `JWT_SECRET` localmente com `node -e "console.log(require('node:crypto').randomBytes(48).toString('base64url'))"` e cadastre o resultado diretamente no ambiente do servidor.
+
+Para desenvolvimento local, copie `server/.env.example` para `server/.env`. Mantenha `DATABASE_PROVIDER=sqlite` até configurar o Supabase. Se já tiver `SUPABASE_SERVICE_ROLE_KEY` no `.env`, ela ainda é aceita temporariamente, mas prefira migrar para a nova variável `SUPABASE_SECRET_KEY`.
+
+### Migrar os dados locais
+O banco SQLite local não é enviado automaticamente. Depois de aplicar a migração SQL e configurar as variáveis Supabase localmente em `server/.env`, faça primeiro uma prévia:
+
+```bash
+npm run migrate:supabase --workspace=server -- --dry-run
+```
+
+Se os totais estiverem corretos, execute a migração:
+
+```bash
+npm run migrate:supabase --workspace=server
+```
+
+A migração preserva IDs, leads, interações, configurações e o hash da senha. Ela não apaga dados do SQLite e é recusada se o Supabase já tiver leads, interações ou usuário. O comando de prévia só mostra contagens e não envia dados.
+
+Se os leads estiverem apenas no servidor antigo, exporte o **Backup JSON Completo** antes do próximo deploy. Depois de conectar o Supabase, restaure esse arquivo pela interface em **Ajustes**; faça isso somente com a base Supabase vazia, pois a restauração substitui a lista de leads e interações. O backup da interface não inclui a senha, então será necessário configurar uma nova.
+
+### Backup manual
+Na interface, acesse **Ajustes > Planilha de Leads & Backup** para exportar CSV ou um backup JSON completo. Guarde os arquivos em local seguro.
 
 ---
 
@@ -108,7 +130,7 @@ npm start
 2. **No hPanel da Hostinger**:
    - Acesse **Avançado > Git** e conecte seu repositório.
    - Acesse a seção **Avançado > Node.js**:
-     - **Versão do Node.js**: Selecione **22.x** (obrigatório para o recurso `node:sqlite`).
+     - **Versão do Node.js**: Selecione **22.x** ou superior.
      - **Modo da Aplicação**: `Produção`.
      - **Raiz do Aplicativo**: diretório onde você clonou o projeto (ex: `public_html` ou `radar`).
      - **Arquivo de Inicialização**: `app.js`.
@@ -118,14 +140,15 @@ npm start
      npm install
      npm run build
      ```
-4. **Iniciar o aplicativo**:
+4. **Configure as variáveis de ambiente do backend** conforme a seção **Configurar o Supabase** antes de iniciar.
+5. **Iniciar o aplicativo**:
    - Clique em **Reiniciar / Iniciar Aplicativo** no hPanel.
-   - O `app.js` iniciará o backend Express na porta designada e servirá automaticamente a interface compilada (`web/dist`). O banco de dados SQLite (`radar.sqlite`) ficará salvo localmente na hospedagem de forma permanente.
+   - O `app.js` iniciará o backend Express na porta designada e servirá automaticamente a interface compilada (`web/dist`). Os leads serão armazenados no Supabase, não no diretório do deploy.
 
 ---
 
 ## 🔒 Segurança e Privacidade
 - **Sessão segura**: Senha criptografada com `bcrypt` (10 rounds de salt) e sessão mantida via cookie HTTP-only ou token seguro.
 - **Proteção contra força bruta**: Limitador de tentativas de login (rate limiting).
-- **Proteção contra SQL Injection**: Todas as consultas ao SQLite utilizam *prepared statements* parametrizados.
-- **Zero serviços de terceiros**: Não utiliza Firebase, Supabase ou Auth0.
+- **Proteção contra SQL Injection**: SQLite usa *prepared statements*; o Supabase é acessado apenas pelo backend autenticado.
+- **Chaves protegidas**: A chave `service_role` fica somente no ambiente do servidor; as tabelas Supabase têm RLS habilitado e sem acesso público.

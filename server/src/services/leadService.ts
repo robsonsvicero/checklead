@@ -7,6 +7,7 @@ import {
   AtualizarLeadDTO,
   AcaoLeadDTO
 } from '@radar/shared';
+import { getDatabaseProvider, getSupabaseClient, throwSupabaseError } from '../db/supabase.js';
 
 export interface ListLeadsFilter {
   status?: string;
@@ -16,7 +17,52 @@ export interface ListLeadsFilter {
   ordem?: 'asc' | 'desc';
 }
 
-export function listarLeads(filtros: ListLeadsFilter = {}): Lead[] {
+export async function listarInteracoes(): Promise<Interacao[]> {
+  if (getDatabaseProvider() === 'supabase') {
+    const { data, error } = await getSupabaseClient()
+      .from('interacoes')
+      .select('*')
+      .order('criado_em', { ascending: true })
+      .order('id', { ascending: true });
+    throwSupabaseError(error);
+    return (data || []).map((interacao: Interacao) => normalizarInteracao(interacao));
+  }
+
+  return getDb()
+    .prepare('SELECT * FROM interacoes ORDER BY criado_em ASC')
+    .all() as unknown as Interacao[];
+}
+
+export async function listarLeads(filtros: ListLeadsFilter = {}): Promise<Lead[]> {
+  if (getDatabaseProvider() === 'supabase') {
+    const { data, error } = await getSupabaseClient()
+      .from('leads')
+      .select('*')
+      .order('id', { ascending: true });
+    throwSupabaseError(error);
+
+    let leads = (data || []).map((lead: Lead) => normalizarLead(lead));
+    if (filtros.status && filtros.status !== 'todos') {
+      leads = leads.filter(lead => lead.status === filtros.status);
+    }
+    if (filtros.origem && filtros.origem !== 'todos') {
+      leads = leads.filter(lead => lead.origem === filtros.origem);
+    }
+    if (filtros.busca?.trim()) {
+      const termo = filtros.busca.trim().toLocaleLowerCase('pt-BR');
+      leads = leads.filter(lead =>
+        [lead.nome, lead.contato, lead.whatsapp, lead.email, lead.responsavel, lead.servico]
+          .some(valor => valor?.toLocaleLowerCase('pt-BR').includes(termo))
+      );
+    }
+
+    const comparar = filtros.ordenarPor === 'valor'
+      ? (a: Lead, b: Lead) => a.valor_estimado - b.valor_estimado
+      : (a: Lead, b: Lead) => a.criado_em.localeCompare(b.criado_em);
+    const direcao = filtros.ordem === 'asc' ? 1 : -1;
+    return leads.sort((a, b) => comparar(a, b) * direcao);
+  }
+
   const db = getDb();
   const whereClauses: string[] = [];
   const params: (string | number | bigint | null)[] = [];
@@ -46,7 +92,23 @@ export function listarLeads(filtros: ListLeadsFilter = {}): Lead[] {
   return db.prepare(sql).all(...params) as unknown as Lead[];
 }
 
-export function obterLeadPorId(id: number): LeadComInteracoes | null {
+export async function obterLeadPorId(id: number): Promise<LeadComInteracoes | null> {
+  if (getDatabaseProvider() === 'supabase') {
+    const client = getSupabaseClient();
+    const [{ data: lead, error: leadError }, { data: interacoes, error: interacoesError }] = await Promise.all([
+      client.from('leads').select('*').eq('id', id).maybeSingle(),
+      client.from('interacoes').select('*').eq('lead_id', id).order('criado_em', { ascending: false })
+    ]);
+    throwSupabaseError(leadError);
+    throwSupabaseError(interacoesError);
+    if (!lead) return null;
+
+    return {
+      ...normalizarLead(lead as Lead),
+      interacoes: (interacoes || []).map((interacao: Interacao) => normalizarInteracao(interacao))
+    };
+  }
+
   const db = getDb();
   const lead = db.prepare('SELECT * FROM leads WHERE id = ?').get(id) as unknown as Lead | undefined;
   if (!lead) return null;
@@ -59,7 +121,28 @@ export function obterLeadPorId(id: number): LeadComInteracoes | null {
   };
 }
 
-export function criarLead(dados: CriarLeadDTO): Lead {
+export async function criarLead(dados: CriarLeadDTO): Promise<Lead> {
+  if (getDatabaseProvider() === 'supabase') {
+    const whatsapp = dados.whatsapp?.trim() || null;
+    const email = dados.email?.trim() || null;
+    const responsavel = dados.responsavel?.trim() || null;
+    const { data, error } = await getSupabaseClient().rpc('criar_lead_atomic', {
+      p_lead: {
+        nome: dados.nome.trim(),
+        contato: dados.contato?.trim() || whatsapp || email || 'Sem contato',
+        whatsapp,
+        email,
+        responsavel,
+        servico: dados.servico.trim(),
+        origem: dados.origem,
+        valor_estimado: dados.valor_estimado,
+        proxima_acao_em: dados.proxima_acao_em || null
+      }
+    });
+    throwSupabaseError(error);
+    return normalizarLead(data as Lead);
+  }
+
   const db = getDb();
   const agora = new Date().toISOString();
 
@@ -97,7 +180,35 @@ export function criarLead(dados: CriarLeadDTO): Lead {
   return db.prepare('SELECT * FROM leads WHERE id = ?').get(novoId) as unknown as Lead;
 }
 
-export function atualizarLead(id: number, dados: AtualizarLeadDTO): Lead {
+export async function atualizarLead(id: number, dados: AtualizarLeadDTO): Promise<Lead> {
+  if (getDatabaseProvider() === 'supabase') {
+    const client = getSupabaseClient();
+    const { data: leadAtual, error: selectError } = await client
+      .from('leads')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+    throwSupabaseError(selectError);
+    if (!leadAtual) throw new Error('Lead não encontrado');
+
+    const atualizacoes: AtualizarLeadDTO = { ...dados };
+    if (dados.whatsapp !== undefined || dados.email !== undefined) {
+      const whatsapp = dados.whatsapp !== undefined ? dados.whatsapp?.trim() : leadAtual.whatsapp;
+      const email = dados.email !== undefined ? dados.email?.trim() : leadAtual.email;
+      atualizacoes.contato = dados.contato?.trim() || whatsapp || email || leadAtual.contato;
+    }
+
+    const { data, error } = await client
+      .from('leads')
+      .update(atualizacoes)
+      .eq('id', id)
+      .select('*')
+      .maybeSingle();
+    throwSupabaseError(error);
+    if (!data) throw new Error('Lead não encontrado');
+    return normalizarLead(data as Lead);
+  }
+
   const db = getDb();
   const leadAtual = db.prepare('SELECT * FROM leads WHERE id = ?').get(id) as unknown as Lead | undefined;
   if (!leadAtual) {
@@ -169,7 +280,22 @@ export function atualizarLead(id: number, dados: AtualizarLeadDTO): Lead {
   return db.prepare('SELECT * FROM leads WHERE id = ?').get(id) as unknown as Lead;
 }
 
-export function executarAcaoLead(id: number, acao: AcaoLeadDTO): LeadComInteracoes {
+export async function executarAcaoLead(id: number, acao: AcaoLeadDTO): Promise<LeadComInteracoes> {
+  if (getDatabaseProvider() === 'supabase') {
+    const { data, error } = await getSupabaseClient().rpc('executar_acao_lead', {
+      p_id: id,
+      p_acao: acao
+    });
+    throwSupabaseError(error);
+
+    const resultado = data as { lead: Lead; interacoes: Interacao[] } | null;
+    if (!resultado) throw new Error('O Supabase não retornou o lead atualizado');
+    return {
+      ...normalizarLead(resultado.lead),
+      interacoes: resultado.interacoes.map(normalizarInteracao)
+    };
+  }
+
   const db = getDb();
   const lead = db.prepare('SELECT * FROM leads WHERE id = ?').get(id) as unknown as Lead | undefined;
   if (!lead) {
@@ -264,11 +390,39 @@ export function executarAcaoLead(id: number, acao: AcaoLeadDTO): LeadComInteraco
     }
   }
 
-  return obterLeadPorId(id)!;
+  const leadAtualizado = await obterLeadPorId(id);
+  if (!leadAtualizado) throw new Error('Lead não encontrado');
+  return leadAtualizado;
 }
 
-export function excluirLead(id: number): boolean {
+export async function excluirLead(id: number): Promise<boolean> {
+  if (getDatabaseProvider() === 'supabase') {
+    const { data, error } = await getSupabaseClient()
+      .from('leads')
+      .delete()
+      .eq('id', id)
+      .select('id');
+    throwSupabaseError(error);
+    return (data || []).length > 0;
+  }
+
   const db = getDb();
   const res = db.prepare('DELETE FROM leads WHERE id = ?').run(id);
   return Number(res.changes) > 0;
+}
+
+function normalizarLead(lead: Lead): Lead {
+  return {
+    ...lead,
+    id: Number(lead.id),
+    valor_estimado: Number(lead.valor_estimado)
+  };
+}
+
+function normalizarInteracao(interacao: Interacao): Interacao {
+  return {
+    ...interacao,
+    id: Number(interacao.id),
+    lead_id: Number(interacao.lead_id)
+  };
 }

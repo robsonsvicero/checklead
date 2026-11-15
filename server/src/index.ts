@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
@@ -6,20 +7,18 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { getDb } from './db/connection.js';
 import { runMigrations } from './db/migrations.js';
+import { assertSupabaseSchemaReady, getDatabaseProvider } from './db/supabase.js';
 import { authRouter } from './routes/authRoutes.js';
 import { leadRouter } from './routes/leadRoutes.js';
 import { radarRouter } from './routes/radarRoutes.js';
 import { configRouter } from './routes/configRoutes.js';
 import { backupRouter } from './routes/backupRoutes.js';
 import { errorHandler } from './middlewares/error.js';
+import { assertJwtSecretConfigured } from './services/authService.js';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3001;
 const HOST = process.env.HOST || '0.0.0.0';
-
-// Inicializa banco de dados e migrações
-const db = getDb();
-runMigrations(db);
 
 // Middlewares essenciais
 app.use(cors({
@@ -63,7 +62,22 @@ if (webDistPath) {
 // Handler de erros Zod e internos
 app.use(errorHandler);
 
-app.listen(PORT, HOST, () => {
-  console.log(`📡 Radar de Leads (Backend) rodando em http://${HOST}:${PORT}`);
-  console.log(`💡 Para acessar via celular na mesma rede, use o IP local da máquina na porta ${PORT}`);
+async function startServer(): Promise<void> {
+  assertJwtSecretConfigured();
+
+  if (getDatabaseProvider() === 'sqlite') {
+    runMigrations(getDb());
+  } else {
+    await assertSupabaseSchemaReady();
+  }
+
+  app.listen(PORT, HOST, () => {
+    console.log(`📡 Radar de Leads (Backend) rodando em http://${HOST}:${PORT}`);
+    console.log(`💡 Para acessar via celular na mesma rede, use o IP local da máquina na porta ${PORT}`);
+  });
+}
+
+void startServer().catch(error => {
+  console.error('Falha ao iniciar o backend:', error);
+  process.exitCode = 1;
 });

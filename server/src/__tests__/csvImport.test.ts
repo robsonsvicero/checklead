@@ -29,13 +29,13 @@ describe('CSV Template and Import', () => {
     expect(csv).toContain('Motivo da Perda');
   });
 
-  it('deve importar planilha CSV com colunas WhatsApp, E-mail e Responsável separadas', () => {
+  it('deve importar planilha CSV com colunas WhatsApp, E-mail e Responsável separadas', async () => {
     const csv = `Nome;WhatsApp;E-mail;Responsável;Serviço;Valor Estimado (R$);Origem;Status;Motivo da Perda
 Carlos Silva;11988887777;carlos@email.com;Mariana;Reforma de Banheiro;2.500,00;Instagram;novo;
 Ana Costa;;ana@empresa.com;Robson;Consultoria;1500;indicação;orcamento_enviado;
 `;
 
-    const res = importarPlanilhaCsv(csv);
+    const res = await importarPlanilhaCsv(csv);
     expect(res.totalImportados).toBe(2);
     expect(res.totalIgnorados).toBe(0);
 
@@ -58,13 +58,13 @@ Ana Costa;;ana@empresa.com;Robson;Consultoria;1500;indicação;orcamento_enviado
     expect(leads[1].status).toBe('orcamento_enviado');
   });
 
-  it('deve ignorar linhas sem nome ou contato', () => {
+  it('deve ignorar linhas sem nome ou contato', async () => {
     const csv = `Nome,Contato,Serviço,Valor Estimado (R$),Origem
 João Souza,11999991111,Site,500,site
 ,,Serviço sem cliente,100,outro
 `;
 
-    const res = importarPlanilhaCsv(csv);
+    const res = await importarPlanilhaCsv(csv);
     expect(res.totalImportados).toBe(1);
     expect(res.totalIgnorados).toBe(1);
   });

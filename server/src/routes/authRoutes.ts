@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { asyncHandler } from '../middlewares/asyncHandler.js';
 import { SetupSenhaSchema, LoginSchema, TrocarSenhaSchema } from '@radar/shared';
 import {
   hasUser,
@@ -13,20 +14,20 @@ import { requireAuth } from '../middlewares/auth.js';
 
 export const authRouter = Router();
 
-authRouter.get('/status', (req, res) => {
+authRouter.get('/status', asyncHandler(async (req, res) => {
   const token = req.cookies?.radar_token || req.headers.authorization?.replace(/^Bearer\s+/i, '');
   const authenticated = token ? verifyToken(token) : false;
 
   res.json({
-    hasUser: hasUser(),
+    hasUser: await hasUser(),
     authenticated
   });
-});
+}));
 
-authRouter.post('/setup', (req, res) => {
+authRouter.post('/setup', asyncHandler(async (req, res, next) => {
   const body = SetupSenhaSchema.parse(req.body);
   try {
-    setupPassword(body.senha);
+    await setupPassword(body.senha);
     const token = generateToken();
     res.cookie('radar_token', token, {
       httpOnly: true,
@@ -36,20 +37,24 @@ authRouter.post('/setup', (req, res) => {
     });
     res.json({ ok: true, message: 'Senha inicial configurada com sucesso!' });
   } catch (err: any) {
-    res.status(400).json({ error: err.message || 'Erro ao configurar senha' });
+    if (err.message === 'Usuário já configurado') {
+      res.status(400).json({ error: err.message });
+      return;
+    }
+    next(err);
   }
-});
+}));
 
-authRouter.post('/login', loginRateLimiter, (req, res) => {
+authRouter.post('/login', loginRateLimiter, asyncHandler(async (req, res) => {
   const ip = req.ip || req.socket.remoteAddress || 'unknown';
   const body = LoginSchema.parse(req.body);
 
-  if (!hasUser()) {
+  if (!await hasUser()) {
     res.status(400).json({ error: 'Nenhum usuário configurado. Crie uma senha inicial primeiro.' });
     return;
   }
 
-  const ok = verifyPassword(body.senha);
+  const ok = await verifyPassword(body.senha);
   if (!ok) {
     registerFailedLogin(ip);
     res.status(401).json({ error: 'Senha incorreta.' });
@@ -66,19 +71,23 @@ authRouter.post('/login', loginRateLimiter, (req, res) => {
   });
 
   res.json({ ok: true });
-});
+}));
 
 authRouter.post('/logout', (req, res) => {
   res.clearCookie('radar_token');
   res.json({ ok: true });
 });
 
-authRouter.put('/senha', requireAuth, (req, res) => {
+authRouter.put('/senha', requireAuth, asyncHandler(async (req, res, next) => {
   const body = TrocarSenhaSchema.parse(req.body);
   try {
-    changePassword(body.senhaAtual, body.novaSenha);
+    await changePassword(body.senhaAtual, body.novaSenha);
     res.json({ ok: true, message: 'Senha atualizada com sucesso!' });
   } catch (err: any) {
-    res.status(400).json({ error: err.message || 'Erro ao trocar senha' });
+    if (err.message === 'Nenhum usuário cadastrado' || err.message === 'Senha atual incorreta') {
+      res.status(400).json({ error: err.message });
+      return;
+    }
+    next(err);
   }
-});
+}));

@@ -1,23 +1,25 @@
 import { Router } from 'express';
+import { asyncHandler } from '../middlewares/asyncHandler.js';
 import { requireAuth } from '../middlewares/auth.js';
-import { getDb } from '../db/connection.js';
 import { obterConfiguracao } from '../services/configService.js';
+import { listarInteracoes, listarLeads } from '../services/leadService.js';
 import {
   calcularAlertas,
   calcularMetricas,
   calcularMotivosPerda
 } from '../services/radarService.js';
-import { Lead, Interacao } from '@radar/shared';
-
+import type { Interacao } from '@radar/shared';
 export const radarRouter = Router();
 
 // Todas as rotas de radar exigem autenticação
 radarRouter.use(requireAuth);
 
-radarRouter.get('/alertas', (req, res) => {
-  const db = getDb();
-  const leads = db.prepare('SELECT * FROM leads ORDER BY id ASC').all() as unknown as Lead[];
-  const interacoesLista = db.prepare('SELECT * FROM interacoes ORDER BY criado_em ASC').all() as unknown as Interacao[];
+radarRouter.get('/alertas', asyncHandler(async (_req, res) => {
+  const [leads, interacoesLista, config] = await Promise.all([
+    listarLeads({ ordenarPor: 'data', ordem: 'asc' }),
+    listarInteracoes(),
+    obterConfiguracao()
+  ]);
   
   const interacoesPorLead = new Map<number, Interacao[]>();
   for (const it of interacoesLista) {
@@ -26,24 +28,21 @@ radarRouter.get('/alertas', (req, res) => {
     interacoesPorLead.set(it.lead_id, arr);
   }
 
-  const config = obterConfiguracao();
   const alertas = calcularAlertas(leads, interacoesPorLead, config);
 
   res.json(alertas);
-});
+}));
 
-radarRouter.get('/metricas', (req, res) => {
-  const db = getDb();
-  const leads = db.prepare('SELECT * FROM leads').all() as unknown as Lead[];
+radarRouter.get('/metricas', asyncHandler(async (_req, res) => {
+  const leads = await listarLeads();
   const metricas = calcularMetricas(leads);
 
   res.json(metricas);
-});
+}));
 
-radarRouter.get('/motivos-perda', (req, res) => {
-  const db = getDb();
-  const leads = db.prepare("SELECT * FROM leads WHERE status = 'perdido'").all() as unknown as Lead[];
+radarRouter.get('/motivos-perda', asyncHandler(async (_req, res) => {
+  const leads = await listarLeads({ status: 'perdido' });
   const motivos = calcularMotivosPerda(leads);
 
   res.json(motivos);
-});
+}));

@@ -1,10 +1,15 @@
 import { DatabaseSync } from 'node:sqlite';
 import path from 'node:path';
 import fs from 'node:fs';
+import { getDatabaseProvider } from './supabase.js';
 
 let instance: DatabaseSync | null = null;
 
 export function getDb(customPath?: string): DatabaseSync {
+  if (getDatabaseProvider() !== 'sqlite') {
+    throw new Error('O acesso SQLite foi solicitado enquanto DATABASE_PROVIDER=supabase.');
+  }
+
   if (instance && !customPath) {
     return instance;
   }

@@ -1,6 +1,8 @@
 import { getDb } from '../db/connection.js';
 import { obterConfiguracao } from './configService.js';
 import { Lead, Interacao, ExportData } from '@radar/shared';
+import { getDatabaseProvider, getSupabaseClient, throwSupabaseError } from '../db/supabase.js';
+import { listarInteracoes, listarLeads } from './leadService.js';
 
 export function gerarModeloCsvVazio(): string {
   const colunas = [
@@ -19,7 +21,7 @@ export function gerarModeloCsvVazio(): string {
   return '\uFEFF' + colunas.join(';') + '\r\n';
 }
 
-export function importarPlanilhaCsv(conteudoCsv: string): { totalImportados: number; totalIgnorados: number } {
+export async function importarPlanilhaCsv(conteudoCsv: string): Promise<{ totalImportados: number; totalIgnorados: number }> {
   const textoLimpo = conteudoCsv.replace(/^\uFEFF/, '').trim();
   if (!textoLimpo) {
     throw new Error('A planilha enviada está vazia.');
@@ -51,91 +53,119 @@ export function importarPlanilhaCsv(conteudoCsv: string): { totalImportados: num
     throw new Error('A planilha deve conter pelo menos a coluna "Nome" e uma coluna de contato ("WhatsApp" ou "E-mail"). Baixe a planilha modelo para conferir o padrão.');
   }
 
-  const db = getDb();
   const agora = new Date().toISOString();
-
-  let totalImportados = 0;
   let totalIgnorados = 0;
+  const leadsImportados: Array<Record<string, string | number | null>> = [];
 
+  for (let i = 1; i < linhas.length; i++) {
+    const col = linhas[i];
+    const nome = col[idxNome]?.trim();
+    const whatsapp = idxWhatsApp !== -1 && col[idxWhatsApp]?.trim() ? col[idxWhatsApp].trim() : null;
+    const email = idxEmail !== -1 && col[idxEmail]?.trim() ? col[idxEmail].trim() : null;
+    const contatoGen = idxContatoGenerico !== -1 && col[idxContatoGenerico]?.trim() ? col[idxContatoGenerico].trim() : null;
+    const responsavel = idxResponsavel !== -1 && col[idxResponsavel]?.trim() ? col[idxResponsavel].trim() : null;
+
+    const contato = whatsapp || email || contatoGen;
+
+    if (!nome || !contato) {
+      totalIgnorados++;
+      continue;
+    }
+
+    const servico = idxServico !== -1 && col[idxServico]?.trim() ? col[idxServico].trim() : 'Não especificado';
+    const valorBruto = idxValor !== -1 && col[idxValor] ? col[idxValor] : '0';
+    const valorCentavos = parseValorMoeda(valorBruto);
+
+    let origem = 'outro';
+    if (idxOrigem !== -1 && col[idxOrigem]) {
+      const o = col[idxOrigem].trim().toLowerCase();
+      if (o.includes('insta')) origem = 'Instagram';
+      else if (o.includes('indica') || o.includes('indicação')) origem = 'indicação';
+      else if (o.includes('site') || o.includes('web')) origem = 'site';
+    }
+
+    let status = 'novo';
+    if (idxStatus !== -1 && col[idxStatus]) {
+      const s = col[idxStatus].trim().toLowerCase();
+      if (s.includes('orcamento') || s.includes('orçado')) status = 'orcamento_enviado';
+      else if (s.includes('fecha') || s.includes('ganho')) status = 'fechado';
+      else if (s.includes('perde') || s.includes('perdido')) status = 'perdido';
+    }
+
+    const motivoPerda = idxMotivo !== -1 && col[idxMotivo]?.trim() ? col[idxMotivo].trim() : (status === 'perdido' ? 'Não informado' : null);
+
+    const orcamentoEm = status === 'orcamento_enviado' ? agora : null;
+    const fechadoEm = (status === 'fechado' || status === 'perdido') ? agora : null;
+
+    leadsImportados.push({
+      nome,
+      contato,
+      whatsapp,
+      email,
+      responsavel,
+      servico,
+      origem,
+      valor_estimado: valorCentavos,
+      status,
+      criado_em: agora,
+      ultimo_contato_em: null,
+      orcamento_enviado_em: orcamentoEm,
+      fechado_em: fechadoEm,
+      motivo_perda: motivoPerda,
+      proxima_acao_em: null
+    });
+  }
+
+  if (getDatabaseProvider() === 'supabase') {
+    const { data, error } = await getSupabaseClient().rpc('importar_leads_em_lote', {
+      p_leads: leadsImportados
+    });
+    throwSupabaseError(error);
+    const resultado = data as { totalImportados: number; totalIgnorados: number };
+    return { totalImportados: resultado.totalImportados, totalIgnorados };
+  }
+
+  const db = getDb();
   db.exec('BEGIN TRANSACTION;');
   try {
     const stmtLead = db.prepare(`
       INSERT INTO leads (
         nome, contato, whatsapp, email, responsavel, servico, origem, valor_estimado, status, criado_em,
         ultimo_contato_em, orcamento_enviado_em, fechado_em, motivo_perda, proxima_acao_em
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
-
     const stmtIt = db.prepare(`
       INSERT INTO interacoes (lead_id, tipo, texto, criado_em)
       VALUES (?, 'nota', ?, ?)
     `);
 
-    for (let i = 1; i < linhas.length; i++) {
-      const col = linhas[i];
-      const nome = col[idxNome]?.trim();
-      const whatsapp = idxWhatsApp !== -1 && col[idxWhatsApp]?.trim() ? col[idxWhatsApp].trim() : null;
-      const email = idxEmail !== -1 && col[idxEmail]?.trim() ? col[idxEmail].trim() : null;
-      const contatoGen = idxContatoGenerico !== -1 && col[idxContatoGenerico]?.trim() ? col[idxContatoGenerico].trim() : null;
-      const responsavel = idxResponsavel !== -1 && col[idxResponsavel]?.trim() ? col[idxResponsavel].trim() : null;
-
-      const contato = whatsapp || email || contatoGen;
-
-      if (!nome || !contato) {
-        totalIgnorados++;
-        continue;
-      }
-
-      const servico = idxServico !== -1 && col[idxServico]?.trim() ? col[idxServico].trim() : 'Não especificado';
-      const valorBruto = idxValor !== -1 && col[idxValor] ? col[idxValor] : '0';
-      const valorCentavos = parseValorMoeda(valorBruto);
-
-      let origem = 'outro';
-      if (idxOrigem !== -1 && col[idxOrigem]) {
-        const o = col[idxOrigem].trim().toLowerCase();
-        if (o.includes('insta')) origem = 'Instagram';
-        else if (o.includes('indica') || o.includes('indicação')) origem = 'indicação';
-        else if (o.includes('site') || o.includes('web')) origem = 'site';
-      }
-
-      let status = 'novo';
-      if (idxStatus !== -1 && col[idxStatus]) {
-        const s = col[idxStatus].trim().toLowerCase();
-        if (s.includes('orcamento') || s.includes('orçado')) status = 'orcamento_enviado';
-        else if (s.includes('fecha') || s.includes('ganho')) status = 'fechado';
-        else if (s.includes('perde') || s.includes('perdido')) status = 'perdido';
-      }
-
-      const motivoPerda = idxMotivo !== -1 && col[idxMotivo]?.trim() ? col[idxMotivo].trim() : (status === 'perdido' ? 'Não informado' : null);
-
-      const orcamentoEm = status === 'orcamento_enviado' ? agora : null;
-      const fechadoEm = (status === 'fechado' || status === 'perdido') ? agora : null;
-
+    for (const lead of leadsImportados) {
       const res = stmtLead.run(
-        nome,
-        contato,
-        whatsapp,
-        email,
-        responsavel,
-        servico,
-        origem,
-        valorCentavos,
-        status,
-        agora,
-        null,
-        orcamentoEm,
-        fechadoEm,
-        motivoPerda
+        lead.nome,
+        lead.contato,
+        lead.whatsapp,
+        lead.email,
+        lead.responsavel,
+        lead.servico,
+        lead.origem,
+        lead.valor_estimado,
+        lead.status,
+        lead.criado_em,
+        lead.ultimo_contato_em,
+        lead.orcamento_enviado_em,
+        lead.fechado_em,
+        lead.motivo_perda,
+        lead.proxima_acao_em
       );
-
-      const novoId = Number(res.lastInsertRowid);
-      stmtIt.run(novoId, `Lead importado via planilha CSV. Origem: ${origem}. Responsável: ${responsavel || 'Não informado'}.`, agora);
-
-      totalImportados++;
+      stmtIt.run(
+        Number(res.lastInsertRowid),
+        `Lead importado via planilha CSV. Origem: ${lead.origem}. Responsável: ${lead.responsavel || 'Não informado'}.`,
+        agora
+      );
     }
 
     db.exec('COMMIT;');
-    return { totalImportados, totalIgnorados };
+    return { totalImportados: leadsImportados.length, totalIgnorados };
   } catch (err) {
     db.exec('ROLLBACK;');
     throw err;
@@ -205,11 +235,25 @@ function parseLinhasCsv(texto: string, sep: string): string[][] {
   return linhas;
 }
 
-export function gerarExportacaoJson(): ExportData {
-  const db = getDb();
-  const configuracao = obterConfiguracao();
-  const leads = db.prepare('SELECT * FROM leads ORDER BY id ASC').all() as unknown as Lead[];
-  const interacoes = db.prepare('SELECT * FROM interacoes ORDER BY id ASC').all() as unknown as Interacao[];
+export async function gerarExportacaoJson(): Promise<ExportData> {
+  let configuracao: Awaited<ReturnType<typeof obterConfiguracao>>;
+  let leads: Lead[];
+  let interacoes: Interacao[];
+
+  if (getDatabaseProvider() === 'supabase') {
+    [configuracao, leads, interacoes] = await Promise.all([
+      obterConfiguracao(),
+      listarLeads({ ordenarPor: 'data', ordem: 'asc' }),
+      listarInteracoes()
+    ]);
+  } else {
+    const db = getDb();
+    [configuracao, leads, interacoes] = await Promise.all([
+      obterConfiguracao(),
+      Promise.resolve(db.prepare('SELECT * FROM leads ORDER BY id ASC').all() as unknown as Lead[]),
+      Promise.resolve(db.prepare('SELECT * FROM interacoes ORDER BY id ASC').all() as unknown as Interacao[])
+    ]);
+  }
 
   return {
     versao: '1.0.0',
@@ -220,9 +264,10 @@ export function gerarExportacaoJson(): ExportData {
   };
 }
 
-export function gerarExportacaoCsv(): string {
-  const db = getDb();
-  const leads = db.prepare('SELECT * FROM leads ORDER BY id ASC').all() as unknown as Lead[];
+export async function gerarExportacaoCsv(): Promise<string> {
+  const leads = getDatabaseProvider() === 'supabase'
+    ? await listarLeads({ ordenarPor: 'data', ordem: 'asc' })
+    : getDb().prepare('SELECT * FROM leads ORDER BY id ASC').all() as unknown as Lead[];
 
   const colunas = [
     'ID',
@@ -279,7 +324,7 @@ function escapeCsv(valor: string | number): string {
   return str;
 }
 
-export function importarBackupJson(conteudo: unknown): { totalLeads: number; totalInteracoes: number } {
+export async function importarBackupJson(conteudo: unknown): Promise<{ totalLeads: number; totalInteracoes: number }> {
   if (typeof conteudo !== 'object' || conteudo === null) {
     throw new Error('Formato de JSON inválido');
   }
@@ -287,6 +332,15 @@ export function importarBackupJson(conteudo: unknown): { totalLeads: number; tot
   const data = conteudo as Partial<ExportData>;
   if (!Array.isArray(data.leads)) {
     throw new Error('Arquivo de backup inválido: lista de leads ausente.');
+  }
+
+  if (getDatabaseProvider() === 'supabase') {
+    const { data: resultado, error } = await getSupabaseClient().rpc('restaurar_backup', {
+      p_backup: data
+    });
+    throwSupabaseError(error);
+    if (!resultado) throw new Error('O Supabase não retornou o resultado da restauração.');
+    return resultado as { totalLeads: number; totalInteracoes: number };
   }
 
   const db = getDb();
