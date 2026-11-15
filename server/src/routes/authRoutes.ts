@@ -23,6 +23,7 @@ import {
   hasUser,
   inviteUserByEmail,
   listUsers,
+  requestPasswordReset,
   setLocalSessionCookie,
   setSessionCookies,
   signInWithEmail,
@@ -143,6 +144,20 @@ authRouter.post('/complete-password-recovery', asyncHandler(async (req, res) => 
     }
     throw error;
   }
+}));
+
+authRouter.post('/request-password-reset', asyncHandler(async (req, res) => {
+  if (getDatabaseProvider() !== 'supabase') {
+    res.status(404).json({ error: 'A recuperação de senha por e-mail está disponível somente com Supabase.' });
+    return;
+  }
+
+  const { email } = InviteEmailSchema.parse(req.body);
+  await requestPasswordReset(email);
+  res.status(202).json({
+    ok: true,
+    message: 'Se o e-mail estiver cadastrado, você receberá um link para redefinir a senha.'
+  });
 }));
 
 authRouter.post('/logout', (req, res) => {

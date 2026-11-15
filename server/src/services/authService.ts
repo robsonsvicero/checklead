@@ -189,6 +189,12 @@ export async function completePasswordRecovery(
   );
 }
 
+export async function requestPasswordReset(email: string): Promise<void> {
+  const redirectTo = getAuthRedirectUrl('/login', 'links de redefinição de senha');
+  const { error } = await createSupabaseAuthClient().auth.resetPasswordForEmail(email, { redirectTo });
+  if (error) throw error;
+}
+
 async function completePasswordFromEmailTokens(
   accessToken: string,
   refreshToken: string,
@@ -241,20 +247,7 @@ export async function changeSupabasePassword(userId: string, newPassword: string
 }
 
 export async function inviteUserByEmail(email: string): Promise<void> {
-  const appUrl = process.env.APP_URL?.trim();
-  if (!appUrl) throw new Error('Configure APP_URL no servidor para enviar convites.');
-
-  let redirectTo: string;
-  try {
-    const redirectUrl = new URL('/login?convite=1', appUrl);
-    if (process.env.NODE_ENV === 'production' && redirectUrl.protocol !== 'https:') {
-      throw new Error('APP_URL deve usar HTTPS em produção.');
-    }
-    redirectTo = redirectUrl.toString();
-  } catch (error) {
-    if (error instanceof Error && error.message === 'APP_URL deve usar HTTPS em produção.') throw error;
-    throw new Error('APP_URL deve ser uma URL válida.');
-  }
+  const redirectTo = getAuthRedirectUrl('/login?convite=1', 'convites');
 
   const { data: existingUser, error: lookupError } = await getSupabaseClient()
     .from('perfis')
@@ -266,6 +259,22 @@ export async function inviteUserByEmail(email: string): Promise<void> {
 
   const { error } = await getSupabaseClient().auth.admin.inviteUserByEmail(email, { redirectTo });
   if (error) throw error;
+}
+
+function getAuthRedirectUrl(path: string, purpose: string): string {
+  const appUrl = process.env.APP_URL?.trim();
+  if (!appUrl) throw new Error(`Configure APP_URL no servidor para enviar ${purpose}.`);
+
+  try {
+    const redirectUrl = new URL(path, appUrl);
+    if (process.env.NODE_ENV === 'production' && redirectUrl.protocol !== 'https:') {
+      throw new Error('APP_URL deve usar HTTPS em produção.');
+    }
+    return redirectUrl.toString();
+  } catch (error) {
+    if (error instanceof Error && error.message === 'APP_URL deve usar HTTPS em produção.') throw error;
+    throw new Error('APP_URL deve ser uma URL válida.');
+  }
 }
 
 export async function listUsers(): Promise<UserSummary[]> {

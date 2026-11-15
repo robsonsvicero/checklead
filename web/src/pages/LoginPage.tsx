@@ -17,8 +17,10 @@ export const LoginPage: React.FC = () => {
   const [invitationTokens, setInvitationTokens] = useState<EmailActionTokens | null>(null);
   const [recoveryTokens, setRecoveryTokens] = useState<EmailActionTokens | null>(null);
   const [passwordRecoveryMode, setPasswordRecoveryMode] = useState(false);
+  const [solicitarRedefinicaoSenha, setSolicitarRedefinicaoSenha] = useState(false);
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [mensagemSucesso, setMensagemSucesso] = useState<string | null>(null);
 
   const { login, hasUser, provider, authenticated, loading: authLoading, checkAuth } = useAuth();
   const navigate = useNavigate();
@@ -93,6 +95,7 @@ export const LoginPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErro(null);
+    setMensagemSucesso(null);
 
     if (isInvitation && !invitationTokens) {
       setErro('Abra o link recebido por e-mail para aceitar o convite.');
@@ -113,7 +116,13 @@ export const LoginPage: React.FC = () => {
 
     try {
       setCarregando(true);
-      if (isInvitation && invitationTokens) {
+      if (solicitarRedefinicaoSenha) {
+        await apiFetch('/auth/request-password-reset', {
+          method: 'POST',
+          body: JSON.stringify({ email })
+        });
+        setMensagemSucesso('Se o e-mail estiver cadastrado, você receberá um link para redefinir a senha.');
+      } else if (isInvitation && invitationTokens) {
         await apiFetch('/auth/accept-invitation', {
           method: 'POST',
           body: JSON.stringify({ ...invitationTokens, novaSenha: senha })
@@ -128,7 +137,7 @@ export const LoginPage: React.FC = () => {
       } else {
         await login({ email: provider === 'supabase' ? email : undefined, senha });
       }
-      navigate('/', { replace: true });
+      if (!solicitarRedefinicaoSenha) navigate('/', { replace: true });
     } catch (err) {
       setErro(err instanceof Error ? err.message : 'Não foi possível concluir o acesso.');
     } finally {
@@ -163,7 +172,9 @@ export const LoginPage: React.FC = () => {
               ? 'Ative seu acesso ao CheckLEAD'
               : isPasswordRecovery
                 ? 'Defina uma nova senha para sua conta'
-                : 'Detector de vazamento de vendas'}
+                : solicitarRedefinicaoSenha
+                  ? 'Receba por e-mail um link para redefinir sua senha'
+                  : 'Detector de vazamento de vendas'}
           </p>
         </div>
 
@@ -178,6 +189,20 @@ export const LoginPage: React.FC = () => {
             marginBottom: '16px'
           }} role="alert">
             {erro}
+          </div>
+        )}
+
+        {mensagemSucesso && (
+          <div style={{
+            background: 'var(--success-bg)',
+            border: '1px solid var(--success-border)',
+            color: 'var(--success)',
+            padding: '10px 14px',
+            borderRadius: '8px',
+            fontSize: '13px',
+            marginBottom: '16px'
+          }} role="status">
+            {mensagemSucesso}
           </div>
         )}
 
@@ -215,38 +240,40 @@ export const LoginPage: React.FC = () => {
               </div>
             )}
 
-            <div className="form-group">
-              <label className="form-label" htmlFor="login-senha">
-                {isPasswordRecovery
-                  ? 'Nova senha (mínimo 8 caracteres)'
-                  : isInvitation
-                    ? 'Crie uma senha (mínimo 8 caracteres)'
-                    : 'Sua Senha de Acesso'}
-              </label>
-              <div className="password-input-wrap">
-                <input
-                  id="login-senha"
-                  type={mostrarSenha ? 'text' : 'password'}
-                  className="form-input"
-                  placeholder={isPasswordRecovery
-                    ? 'Digite sua nova senha'
+            {!solicitarRedefinicaoSenha && (
+              <div className="form-group">
+                <label className="form-label" htmlFor="login-senha">
+                  {isPasswordRecovery
+                    ? 'Nova senha (mínimo 8 caracteres)'
                     : isInvitation
-                      ? 'Crie uma senha segura'
-                      : 'Digite sua senha'}
-                  value={senha}
-                  onChange={e => setSenha(e.target.value)}
-                  autoComplete={isPasswordSetup ? 'new-password' : 'current-password'}
-                  required
-                  autoFocus={provider === 'sqlite' || isPasswordSetup}
-                />
-                <PasswordVisibilityToggle
-                  inputId="login-senha"
-                  label="senha"
-                  visible={mostrarSenha}
-                  onToggle={() => setMostrarSenha(visible => !visible)}
-                />
+                      ? 'Crie uma senha (mínimo 8 caracteres)'
+                      : 'Sua Senha de Acesso'}
+                </label>
+                <div className="password-input-wrap">
+                  <input
+                    id="login-senha"
+                    type={mostrarSenha ? 'text' : 'password'}
+                    className="form-input"
+                    placeholder={isPasswordRecovery
+                      ? 'Digite sua nova senha'
+                      : isInvitation
+                        ? 'Crie uma senha segura'
+                        : 'Digite sua senha'}
+                    value={senha}
+                    onChange={e => setSenha(e.target.value)}
+                    autoComplete={isPasswordSetup ? 'new-password' : 'current-password'}
+                    required
+                    autoFocus={provider === 'sqlite' || isPasswordSetup}
+                  />
+                  <PasswordVisibilityToggle
+                    inputId="login-senha"
+                    label="senha"
+                    visible={mostrarSenha}
+                    onToggle={() => setMostrarSenha(visible => !visible)}
+                  />
+                </div>
               </div>
-            </div>
+            )}
 
             {isPasswordSetup && (
               <div className="form-group">
@@ -276,8 +303,26 @@ export const LoginPage: React.FC = () => {
 
             {provider === 'supabase' && !isPasswordSetup && (
               <p className="auth-subtitle" style={{ fontSize: '12px', marginTop: '-4px' }}>
-                O acesso é feito por convite do administrador.
+                {solicitarRedefinicaoSenha
+                  ? 'Informe o e-mail da sua conta.'
+                  : 'O acesso é feito por convite do administrador.'}
               </p>
+            )}
+
+            {provider === 'supabase' && !isPasswordSetup && !solicitarRedefinicaoSenha && (
+              <div style={{ textAlign: 'right', marginTop: '-8px', marginBottom: '4px' }}>
+                <button
+                  type="button"
+                  className="auth-text-link"
+                  onClick={() => {
+                    setSolicitarRedefinicaoSenha(true);
+                    setErro(null);
+                    setMensagemSucesso(null);
+                  }}
+                >
+                  Esqueci minha senha
+                </button>
+              </div>
             )}
 
             <button
@@ -287,7 +332,9 @@ export const LoginPage: React.FC = () => {
               disabled={carregando || authLoading}
             >
               {carregando
-                ? 'Aguarde...'
+                ? solicitarRedefinicaoSenha ? 'Enviando...' : 'Aguarde...'
+                : solicitarRedefinicaoSenha
+                  ? 'Enviar link de redefinição'
                 : isPasswordRecovery
                   ? 'Salvar nova senha'
                   : isInvitation
@@ -296,6 +343,22 @@ export const LoginPage: React.FC = () => {
                       ? 'Entrar'
                       : 'Acessar Radar'}
             </button>
+
+            {solicitarRedefinicaoSenha && (
+              <div style={{ textAlign: 'center', marginTop: '12px' }}>
+                <button
+                  type="button"
+                  className="auth-text-link"
+                  onClick={() => {
+                    setSolicitarRedefinicaoSenha(false);
+                    setMensagemSucesso(null);
+                    setErro(null);
+                  }}
+                >
+                  Voltar para o login
+                </button>
+              </div>
+            )}
           </form>
         )}
       </div>
