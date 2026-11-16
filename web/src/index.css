@@ -147,7 +147,11 @@ button, input, select, textarea { font: inherit; }
 .lead-card:hover { border-color: var(--primary-border); }
 .lead-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 8px; }
 .lead-header-main { min-width: 0; flex: 1; }
+.lead-title-row { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; }
 .lead-nome { font-size: 16px; font-weight: 700; color: var(--ink); }
+.lead-social-link { color: var(--primary); font-size: 12px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.lead-social-link:hover { color: var(--primary-hover); }
+.lead-social-link:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 2px; }
 .lead-descricao { font-size: 13px; color: var(--text-muted); }
 .lead-responsavel { margin-left: 6px; color: var(--primary-ink); font-weight: 600; }
 .lead-header-meta { flex: 0 0 auto; text-align: right; }

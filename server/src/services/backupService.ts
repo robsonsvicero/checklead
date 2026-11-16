@@ -9,6 +9,8 @@ export function gerarModeloCsvVazio(): string {
     'Nome',
     'WhatsApp',
     'E-mail',
+    'Instagram',
+    'Google Meu Negócio',
     'Responsável',
     'Serviço',
     'Valor Estimado (R$)',
@@ -41,6 +43,8 @@ export async function importarPlanilhaCsv(conteudoCsv: string, userId: string): 
   const idxNome = cabecalho.findIndex(c => c.includes('nome'));
   const idxWhatsApp = cabecalho.findIndex(c => c.includes('whats') || c.includes('zap') || c.includes('celular') || c.includes('telefone'));
   const idxEmail = cabecalho.findIndex(c => c.includes('mail'));
+  const idxInstagram = cabecalho.findIndex(c => c.includes('instagram'));
+  const idxGoogleMeuNegocio = cabecalho.findIndex(c => c.includes('google') && c.includes('negocio'));
   const idxContatoGenerico = cabecalho.findIndex(c => c.includes('contato'));
   const idxResponsavel = cabecalho.findIndex(c => c.includes('responsavel') || c.includes('responsável') || c.includes('atendente') || c.includes('dono'));
   const idxServico = cabecalho.findIndex(c => c.includes('servico') || c.includes('serviço'));
@@ -62,6 +66,12 @@ export async function importarPlanilhaCsv(conteudoCsv: string, userId: string): 
     const nome = col[idxNome]?.trim();
     const whatsapp = idxWhatsApp !== -1 && col[idxWhatsApp]?.trim() ? col[idxWhatsApp].trim() : null;
     const email = idxEmail !== -1 && col[idxEmail]?.trim() ? col[idxEmail].trim() : null;
+    const instagram = idxInstagram !== -1 && col[idxInstagram]?.trim()
+      ? col[idxInstagram].trim().replace(/^@/, '')
+      : null;
+    const googleMeuNegocio = idxGoogleMeuNegocio !== -1 && col[idxGoogleMeuNegocio]?.trim()
+      ? col[idxGoogleMeuNegocio].trim()
+      : null;
     const contatoGen = idxContatoGenerico !== -1 && col[idxContatoGenerico]?.trim() ? col[idxContatoGenerico].trim() : null;
     const responsavel = idxResponsavel !== -1 && col[idxResponsavel]?.trim() ? col[idxResponsavel].trim() : null;
 
@@ -102,6 +112,8 @@ export async function importarPlanilhaCsv(conteudoCsv: string, userId: string): 
       contato,
       whatsapp,
       email,
+      instagram,
+      google_meu_negocio: googleMeuNegocio,
       responsavel,
       servico,
       origem,
@@ -131,9 +143,9 @@ export async function importarPlanilhaCsv(conteudoCsv: string, userId: string): 
   try {
     const stmtLead = db.prepare(`
       INSERT INTO leads (
-        nome, contato, whatsapp, email, responsavel, servico, origem, valor_estimado, status, criado_em,
+        nome, contato, whatsapp, email, instagram, google_meu_negocio, responsavel, servico, origem, valor_estimado, status, criado_em,
         ultimo_contato_em, orcamento_enviado_em, fechado_em, motivo_perda, proxima_acao_em
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     const stmtIt = db.prepare(`
       INSERT INTO interacoes (lead_id, tipo, texto, criado_em)
@@ -146,6 +158,8 @@ export async function importarPlanilhaCsv(conteudoCsv: string, userId: string): 
         lead.contato,
         lead.whatsapp,
         lead.email,
+        lead.instagram,
+        lead.google_meu_negocio,
         lead.responsavel,
         lead.servico,
         lead.origem,
@@ -275,6 +289,8 @@ export async function gerarExportacaoCsv(userId: string): Promise<string> {
     'Nome',
     'WhatsApp',
     'E-mail',
+    'Instagram',
+    'Google Meu Negócio',
     'Responsável',
     'Contato',
     'Serviço',
@@ -298,6 +314,8 @@ export async function gerarExportacaoCsv(userId: string): Promise<string> {
       escapeCsv(lead.nome),
       escapeCsv(lead.whatsapp || ''),
       escapeCsv(lead.email || ''),
+      escapeCsv(lead.instagram ? `@${lead.instagram.replace(/^@/, '')}` : ''),
+      escapeCsv(lead.google_meu_negocio || ''),
       escapeCsv(lead.responsavel || ''),
       escapeCsv(lead.contato),
       escapeCsv(lead.servico),
@@ -374,9 +392,9 @@ export async function importarBackupJson(conteudo: unknown, userId: string): Pro
     // Insere Leads
     const stmtLead = db.prepare(`
       INSERT INTO leads (
-        id, nome, contato, whatsapp, email, responsavel, servico, origem, valor_estimado, status,
+        id, nome, contato, whatsapp, email, instagram, google_meu_negocio, responsavel, servico, origem, valor_estimado, status,
         criado_em, ultimo_contato_em, orcamento_enviado_em, fechado_em, motivo_perda, proxima_acao_em
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     for (const lead of data.leads) {
@@ -386,6 +404,8 @@ export async function importarBackupJson(conteudo: unknown, userId: string): Pro
         lead.contato,
         lead.whatsapp || null,
         lead.email || null,
+        lead.instagram?.replace(/^@/, '') || null,
+        lead.google_meu_negocio || null,
         lead.responsavel || null,
         lead.servico,
         lead.origem,

@@ -60,7 +60,7 @@ Em desenvolvimento, o backend usa SQLite em `server/radar.sqlite`. O antigo cami
 
 ### Configurar o Supabase
 1. Crie um projeto Supabase.
-2. No **SQL Editor**, execute [`supabase/migrations/202611140001_initial_schema.sql`](./supabase/migrations/202611140001_initial_schema.sql), [`supabase/migrations/202611150001_multi_user_auth.sql`](./supabase/migrations/202611150001_multi_user_auth.sql) e [`supabase/migrations/202611150002_cascade_auth_user_deletion.sql`](./supabase/migrations/202611150002_cascade_auth_user_deletion.sql), nessa ordem. A última migração permite que a exclusão de uma conta remova também os leads, interações e configurações vinculados.
+2. No **SQL Editor**, execute [`supabase/migrations/202611140001_initial_schema.sql`](./supabase/migrations/202611140001_initial_schema.sql), [`supabase/migrations/202611150001_multi_user_auth.sql`](./supabase/migrations/202611150001_multi_user_auth.sql), [`supabase/migrations/202611150002_cascade_auth_user_deletion.sql`](./supabase/migrations/202611150002_cascade_auth_user_deletion.sql) e [`supabase/migrations/202611150003_lead_social_links.sql`](./supabase/migrations/202611150003_lead_social_links.sql), nessa ordem. A migração de cascade permite que a exclusão de uma conta remova também os leads, interações e configurações vinculados; a última adiciona os campos de Instagram e Google Meu Negócio aos leads.
 3. Antes de criar qualquer conta, desative o cadastro público em **Authentication > Settings > User Signups**.
 4. Crie a conta administradora pelo painel em **Authentication > Users > Add user**. Se já existirem contas Auth, escolha explicitamente qual delas será administradora.
 5. No SQL Editor, substitua `admin@exemplo.com` pelo e-mail escolhido e execute este bloco. Ele promove a conta e atribui a ela os leads, interações e configurações existentes:
@@ -112,14 +112,14 @@ Em desenvolvimento, o backend usa SQLite em `server/radar.sqlite`. O antigo cami
    - `SUPABASE_SECRET_KEY` — a nova chave **Secret** do backend (`sb_secret_...`); nunca a coloque no frontend, em variáveis `VITE_*` ou no Git
    - `APP_URL` — URL pública do app, por exemplo `https://checklead.robsonsvicero.com.br`; usada para direcionar os convites
 7. Configure o SMTP em **Authentication > SMTP Settings** e permita as URLs `https://checklead.robsonsvicero.com.br/login?convite=1` (convites) e `https://checklead.robsonsvicero.com.br/login` (recuperação de senha) em **Authentication > URL Configuration**. Para desenvolvimento local, permita também `http://localhost:5173/login?convite=1` e `http://localhost:5173/login`. Se o link de recuperação redirecionar para a raiz do site, o app preserva o token ao encaminhá-lo para o login.
-8. Coloque o app em manutenção durante a aplicação da migração e a publicação do código atualizado: a nova versão exige o schema multiusuário. Depois, reinicie o aplicativo. Sem essas configurações, o backend falha explicitamente em vez de gravar em SQLite temporário.
+8. Coloque o app em manutenção durante a aplicação das migrações e a publicação do código atualizado: a nova versão exige o schema multiusuário e os campos de redes sociais nos leads. Depois, reinicie o aplicativo. Sem essas configurações, o backend falha explicitamente em vez de gravar em SQLite temporário.
 
 `JWT_SECRET` só é usado pelo login local em SQLite; o modo Supabase usa os tokens de sessão do Supabase Auth em cookies HTTP-only.
 
 Para desenvolvimento local, copie `server/.env.example` para `server/.env`. Mantenha `DATABASE_PROVIDER=sqlite` até configurar o Supabase. Se já tiver `SUPABASE_SERVICE_ROLE_KEY` no `.env`, ela ainda é aceita temporariamente, mas prefira migrar para a nova variável `SUPABASE_SECRET_KEY`.
 
 ### Migrar os dados locais
-O banco SQLite local não é enviado automaticamente. Depois de criar a conta destino no Supabase Auth e aplicar as duas migrações SQL, configure `DATABASE_PROVIDER=supabase`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY` e `SUPABASE_MIGRATION_USER_ID` (UUID da conta destino) no ambiente usado pelo comando. Faça primeiro uma prévia:
+O banco SQLite local não é enviado automaticamente. Depois de criar a conta destino no Supabase Auth e aplicar as migrações SQL, configure `DATABASE_PROVIDER=supabase`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY` e `SUPABASE_MIGRATION_USER_ID` (UUID da conta destino) no ambiente usado pelo comando. Faça primeiro uma prévia:
 
 ```bash
 npm run migrate:supabase --workspace=server -- --dry-run
@@ -136,7 +136,7 @@ A migração copia leads, interações e configurações para a conta informada 
 Se os leads estiverem apenas no servidor antigo, exporte o **Backup JSON Completo** antes do próximo deploy. Depois de conectar o Supabase, restaure esse arquivo pela interface em **Ajustes**; a restauração substitui apenas os leads e interações da conta autenticada. O backup não inclui senhas.
 
 ### Backup manual
-Na interface, acesse **Ajustes > Planilha de Leads & Backup** para exportar CSV ou um backup JSON completo. Guarde os arquivos em local seguro.
+Na interface, acesse **Ajustes > Planilha de Leads & Backup** para exportar CSV ou um backup JSON completo. A planilha inclui o @ do Instagram e o link do Google Meu Negócio por lead. Guarde os arquivos em local seguro.
 
 ---
 

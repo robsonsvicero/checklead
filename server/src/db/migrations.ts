@@ -22,6 +22,8 @@ export function runMigrations(db: DatabaseSync) {
       contato TEXT NOT NULL,
       whatsapp TEXT,
       email TEXT,
+      instagram TEXT,
+      google_meu_negocio TEXT,
       responsavel TEXT,
       servico TEXT NOT NULL,
       origem TEXT NOT NULL,
@@ -64,6 +66,12 @@ export function runMigrations(db: DatabaseSync) {
   }
   if (!nomesColunas.includes('responsavel')) {
     db.exec('ALTER TABLE leads ADD COLUMN responsavel TEXT;');
+  }
+  if (!nomesColunas.includes('instagram')) {
+    db.exec('ALTER TABLE leads ADD COLUMN instagram TEXT;');
+  }
+  if (!nomesColunas.includes('google_meu_negocio')) {
+    db.exec('ALTER TABLE leads ADD COLUMN google_meu_negocio TEXT;');
   }
 
   // Garante que a linha de configuração padrão exista

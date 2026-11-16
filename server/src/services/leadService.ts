@@ -134,6 +134,8 @@ export async function criarLead(dados: CriarLeadDTO, userId: string): Promise<Le
   if (getDatabaseProvider() === 'supabase') {
     const whatsapp = dados.whatsapp?.trim() || null;
     const email = dados.email?.trim() || null;
+    const instagram = dados.instagram?.trim().replace(/^@/, '') || null;
+    const googleMeuNegocio = dados.google_meu_negocio?.trim() || null;
     const responsavel = dados.responsavel?.trim() || null;
     const { data, error } = await getSupabaseClient().rpc('criar_lead_atomic', {
       p_user_id: userId,
@@ -142,6 +144,8 @@ export async function criarLead(dados: CriarLeadDTO, userId: string): Promise<Le
         contato: dados.contato?.trim() || whatsapp || email || 'Sem contato',
         whatsapp,
         email,
+        instagram,
+        google_meu_negocio: googleMeuNegocio,
         responsavel,
         servico: dados.servico.trim(),
         origem: dados.origem,
@@ -158,19 +162,23 @@ export async function criarLead(dados: CriarLeadDTO, userId: string): Promise<Le
 
   const whatsapp = dados.whatsapp?.trim() || null;
   const email = dados.email?.trim() || null;
+  const instagram = dados.instagram?.trim().replace(/^@/, '') || null;
+  const googleMeuNegocio = dados.google_meu_negocio?.trim() || null;
   const contato = dados.contato?.trim() || whatsapp || email || 'Sem contato';
   const responsavel = dados.responsavel?.trim() || null;
 
   const res = db.prepare(`
     INSERT INTO leads (
-      nome, contato, whatsapp, email, responsavel, servico, origem, valor_estimado, status, criado_em,
+      nome, contato, whatsapp, email, instagram, google_meu_negocio, responsavel, servico, origem, valor_estimado, status, criado_em,
       ultimo_contato_em, orcamento_enviado_em, fechado_em, motivo_perda, proxima_acao_em
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'novo', ?, NULL, NULL, NULL, NULL, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'novo', ?, NULL, NULL, NULL, NULL, ?)
   `).run(
     dados.nome.trim(),
     contato,
     whatsapp,
     email,
+    instagram,
+    googleMeuNegocio,
     responsavel,
     dados.servico.trim(),
     dados.origem,
@@ -241,6 +249,14 @@ export async function atualizarLead(id: number, dados: AtualizarLeadDTO, userId:
   if (dados.email !== undefined) {
     updates.push('email = ?');
     params.push(dados.email ? dados.email.trim() : null);
+  }
+  if (dados.instagram !== undefined) {
+    updates.push('instagram = ?');
+    params.push(dados.instagram ? dados.instagram.trim().replace(/^@/, '') : null);
+  }
+  if (dados.google_meu_negocio !== undefined) {
+    updates.push('google_meu_negocio = ?');
+    params.push(dados.google_meu_negocio ? dados.google_meu_negocio.trim() : null);
   }
   if (dados.responsavel !== undefined) {
     updates.push('responsavel = ?');

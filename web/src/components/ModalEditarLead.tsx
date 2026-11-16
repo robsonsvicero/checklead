@@ -19,6 +19,8 @@ export const ModalEditarLead: React.FC<ModalEditarLeadProps> = ({
   const [nome, setNome] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
   const [email, setEmail] = useState('');
+  const [instagram, setInstagram] = useState('');
+  const [googleMeuNegocio, setGoogleMeuNegocio] = useState('');
   const [responsavel, setResponsavel] = useState('');
   const [servico, setServico] = useState('');
   const [valorTexto, setValorTexto] = useState('');
@@ -33,6 +35,8 @@ export const ModalEditarLead: React.FC<ModalEditarLeadProps> = ({
       setNome(lead.nome);
       setWhatsapp(lead.whatsapp || (lead.contato.includes('@') ? '' : lead.contato));
       setEmail(lead.email || (lead.contato.includes('@') ? lead.contato : ''));
+      setInstagram(lead.instagram ? `@${lead.instagram.replace(/^@/, '')}` : '');
+      setGoogleMeuNegocio(lead.google_meu_negocio || '');
       setResponsavel(lead.responsavel || '');
       setServico(lead.servico);
       setValorTexto((lead.valor_estimado / 100).toFixed(2).replace('.', ','));
@@ -76,6 +80,8 @@ export const ModalEditarLead: React.FC<ModalEditarLeadProps> = ({
           nome: nome.trim(),
           whatsapp: whatsLimpo || null,
           email: emailLimpo || null,
+          instagram: instagram.trim().replace(/^@/, '') || null,
+          google_meu_negocio: googleMeuNegocio.trim() || null,
           contato: whatsLimpo || emailLimpo,
           responsavel: responsavel.trim() || null,
           servico: servico.trim(),
@@ -166,6 +172,32 @@ export const ModalEditarLead: React.FC<ModalEditarLeadProps> = ({
                 placeholder="cliente@email.com"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="modal-form-grid">
+            <div className="form-group">
+              <label className="form-label" htmlFor="editar-lead-instagram">Instagram</label>
+              <input
+                id="editar-lead-instagram"
+                type="text"
+                className="form-input"
+                placeholder="@usuario"
+                value={instagram}
+                onChange={e => setInstagram(e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label" htmlFor="editar-lead-google-meu-negocio">Google Meu Negócio</label>
+              <input
+                id="editar-lead-google-meu-negocio"
+                type="url"
+                className="form-input"
+                placeholder="https://maps.app.goo.gl/..."
+                value={googleMeuNegocio}
+                onChange={e => setGoogleMeuNegocio(e.target.value)}
               />
             </div>
           </div>

@@ -13,6 +13,8 @@ export const ModalNovoLead: React.FC<ModalNovoLeadProps> = ({ aberto, onFechar, 
   const [nome, setNome] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
   const [email, setEmail] = useState('');
+  const [instagram, setInstagram] = useState('');
+  const [googleMeuNegocio, setGoogleMeuNegocio] = useState('');
   const [responsavel, setResponsavel] = useState('');
   const [servico, setServico] = useState('');
   const [valorTexto, setValorTexto] = useState('');
@@ -49,6 +51,8 @@ export const ModalNovoLead: React.FC<ModalNovoLeadProps> = ({ aberto, onFechar, 
           nome: nome.trim(),
           whatsapp: whatsLimpo || null,
           email: emailLimpo || null,
+          instagram: instagram.trim().replace(/^@/, '') || null,
+          google_meu_negocio: googleMeuNegocio.trim() || null,
           contato: whatsLimpo || emailLimpo,
           responsavel: responsavel.trim() || null,
           servico: servico.trim(),
@@ -61,6 +65,8 @@ export const ModalNovoLead: React.FC<ModalNovoLeadProps> = ({ aberto, onFechar, 
       setNome('');
       setWhatsapp('');
       setEmail('');
+      setInstagram('');
+      setGoogleMeuNegocio('');
       setResponsavel('');
       setServico('');
       setValorTexto('');
@@ -155,6 +161,32 @@ export const ModalNovoLead: React.FC<ModalNovoLeadProps> = ({ aberto, onFechar, 
           <small id="novo-lead-contato-ajuda" style={{ display: 'block', color: 'var(--text-muted)', fontSize: '11px', marginTop: '-8px', marginBottom: '12px' }}>
             * Preencha pelo menos um: WhatsApp ou E-mail.
           </small>
+
+          <div className="modal-form-grid">
+            <div className="form-group">
+              <label className="form-label" htmlFor="novo-lead-instagram">Instagram</label>
+              <input
+                id="novo-lead-instagram"
+                type="text"
+                className="form-input"
+                placeholder="@usuario"
+                value={instagram}
+                onChange={e => setInstagram(e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label" htmlFor="novo-lead-google-meu-negocio">Google Meu Negócio</label>
+              <input
+                id="novo-lead-google-meu-negocio"
+                type="url"
+                className="form-input"
+                placeholder="https://maps.app.goo.gl/..."
+                value={googleMeuNegocio}
+                onChange={e => setGoogleMeuNegocio(e.target.value)}
+              />
+            </div>
+          </div>
 
           <div className="form-group">
             <label className="form-label" htmlFor="novo-lead-servico">Serviço Desejado *</label>

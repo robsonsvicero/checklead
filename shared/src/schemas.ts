@@ -3,11 +3,24 @@ import { z } from 'zod';
 export const LeadOrigemEnum = z.enum(['Instagram', 'indicação', 'site', 'outro']);
 export const LeadStatusEnum = z.enum(['novo', 'orcamento_enviado', 'fechado', 'perdido']);
 export const InteracaoTipoEnum = z.enum(['contato', 'orcamento', 'follow_up', 'nota']);
+const InstagramSchema = z.string()
+  .trim()
+  .regex(/^@?[A-Za-z0-9._]{1,30}$/, 'Informe um @ do Instagram válido')
+  .nullable()
+  .optional();
+const GoogleMeuNegocioSchema = z.string()
+  .trim()
+  .url('Informe um link válido do Google Meu Negócio')
+  .refine(value => /^https?:\/\//i.test(value), 'O link deve começar com http:// ou https://')
+  .nullable()
+  .optional();
 
 export const CriarLeadSchema = z.object({
   nome: z.string().trim().min(2, 'O nome deve ter pelo menos 2 caracteres'),
   whatsapp: z.string().trim().nullable().optional(),
   email: z.string().trim().nullable().optional(),
+  instagram: InstagramSchema,
+  google_meu_negocio: GoogleMeuNegocioSchema,
   contato: z.string().trim().optional(),
   responsavel: z.string().trim().nullable().optional(),
   servico: z.string().trim().min(2, 'Informe o serviço desejado'),
@@ -25,6 +38,8 @@ export const AtualizarLeadSchema = z.object({
   nome: z.string().trim().min(2).optional(),
   whatsapp: z.string().trim().nullable().optional(),
   email: z.string().trim().nullable().optional(),
+  instagram: InstagramSchema,
+  google_meu_negocio: GoogleMeuNegocioSchema,
   contato: z.string().trim().optional(),
   responsavel: z.string().trim().nullable().optional(),
   servico: z.string().trim().min(2).optional(),

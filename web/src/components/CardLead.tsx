@@ -23,14 +23,31 @@ export const CardLead: React.FC<CardLeadProps> = ({
   const whatsLink = lead.whatsapp ? gerarLinkContato(lead.whatsapp) : null;
   const emailLink = lead.email ? gerarLinkContato(lead.email) : null;
   const contatoFallback = !whatsLink && !emailLink ? gerarLinkContato(lead.contato) : null;
+  const instagramHandle = lead.instagram?.replace(/^@/, '');
+  const instagramUrl = instagramHandle
+    ? `https://www.instagram.com/${encodeURIComponent(instagramHandle)}/`
+    : null;
+  const googleMeuNegocioUrl = getHttpUrl(lead.google_meu_negocio);
 
   return (
     <div className="lead-card">
       <div className="lead-header">
         <div className="lead-header-main">
-          <Link to={`/leads/${lead.id}`} style={{ textDecoration: 'none' }}>
-            <h3 className="lead-nome">{lead.nome}</h3>
-          </Link>
+          <div className="lead-title-row">
+            <Link to={`/leads/${lead.id}`} style={{ textDecoration: 'none' }}>
+              <h3 className="lead-nome">{lead.nome}</h3>
+            </Link>
+            {instagramUrl && (
+              <a href={instagramUrl} target="_blank" rel="noopener noreferrer" className="lead-social-link">
+                @{instagramHandle}
+              </a>
+            )}
+            {googleMeuNegocioUrl && (
+              <a href={googleMeuNegocioUrl} target="_blank" rel="noopener noreferrer" className="lead-social-link">
+                Google Meu Negócio
+              </a>
+            )}
+          </div>
           <div className="lead-descricao">
             {lead.servico} · <small>via {lead.origem}</small>
             {lead.responsavel && (
@@ -188,3 +205,14 @@ export const CardLead: React.FC<CardLeadProps> = ({
     </div>
   );
 };
+
+function getHttpUrl(value: string | null): string | null {
+  if (!value) return null;
+
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : null;
+  } catch {
+    return null;
+  }
+}
