@@ -21,6 +21,7 @@ describe('CSV Template and Import', () => {
     expect(csv).toContain('Nome');
     expect(csv).toContain('WhatsApp');
     expect(csv).toContain('E-mail');
+    expect(csv).toContain('Contato');
     expect(csv).toContain('Instagram');
     expect(csv).toContain('Google Meu Negócio');
     expect(csv).toContain('Responsável');

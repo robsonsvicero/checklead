@@ -9,6 +9,7 @@ export function gerarModeloCsvVazio(): string {
     'Nome',
     'WhatsApp',
     'E-mail',
+    'Contato',
     'Instagram',
     'Google Meu Negócio',
     'Responsável',
