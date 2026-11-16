@@ -155,6 +155,7 @@ button, input, select, textarea { font: inherit; }
 .lead-descricao { font-size: 13px; color: var(--text-muted); }
 .lead-responsavel { margin-left: 6px; color: var(--primary-ink); font-weight: 600; }
 .lead-header-meta { flex: 0 0 auto; text-align: right; }
+.lead-detail-title-row { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; }
 .lead-valor { margin-top: 4px; color: var(--text-main); font-size: 15px; font-weight: 700; white-space: nowrap; }
 .lead-details { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 8px 0; color: var(--text-muted); font-size: 12px; }
 .lead-contact-link { display: inline-flex; min-height: 32px; align-items: center; padding: 2px 8px; border-radius: 4px; font-weight: 600; text-decoration: none; }

@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { apiFetch } from '../api/client.js';
 import { LeadComInteracoes } from '@radar/shared';
 import { formatarMoeda, formatarDataHora, formatarStatusLead, gerarLinkContato } from '../utils/formatters.js';
+import { gerarLinksSociaisLead } from '../utils/socialLinks.js';
 import { LoadingState, ErrorState } from '../components/FeedbackStates.js';
 import { ModalAcao } from '../components/ModalAcao.js';
 import { ModalEditarLead } from '../components/ModalEditarLead.js';
@@ -132,6 +133,10 @@ export const LeadDetalhesPage: React.FC = () => {
   }
 
   const contatoInfo = gerarLinkContato(lead.contato);
+  const { instagramHandle, instagramUrl, googleMeuNegocioUrl } = gerarLinksSociaisLead(
+    lead.instagram,
+    lead.google_meu_negocio
+  );
 
   return (
     <div className="container">
@@ -165,7 +170,19 @@ export const LeadDetalhesPage: React.FC = () => {
             <span className={`badge-status ${lead.status}`} style={{ marginBottom: '10px', display: 'inline-block' }}>
               Status: {formatarStatusLead(lead.status)}
             </span>
-            <h1 style={{ fontSize: '24px', fontWeight: 750, color: 'var(--foreground)', letterSpacing: '-0.02em' }}>{lead.nome}</h1>
+            <div className="lead-detail-title-row">
+              <h1 style={{ fontSize: '24px', fontWeight: 750, color: 'var(--foreground)', letterSpacing: '-0.02em' }}>{lead.nome}</h1>
+              {instagramUrl && (
+                <a href={instagramUrl} target="_blank" rel="noopener noreferrer" className="lead-social-link">
+                  @{instagramHandle}
+                </a>
+              )}
+              {googleMeuNegocioUrl && (
+                <a href={googleMeuNegocioUrl} target="_blank" rel="noopener noreferrer" className="lead-social-link">
+                  Google Meu Negócio
+                </a>
+              )}
+            </div>
             <p style={{ fontSize: '14px', color: 'var(--muted-foreground)', marginTop: '4px' }}>
               {lead.servico} · <small>Canal: {lead.origem}</small>
               {lead.responsavel && (

@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Lead } from '@radar/shared';
 import { formatarMoeda, formatarDataHora, formatarStatusLead, gerarLinkContato } from '../utils/formatters.js';
+import { gerarLinksSociaisLead } from '../utils/socialLinks.js';
 
 interface CardLeadProps {
   lead: Lead;
@@ -23,11 +24,10 @@ export const CardLead: React.FC<CardLeadProps> = ({
   const whatsLink = lead.whatsapp ? gerarLinkContato(lead.whatsapp) : null;
   const emailLink = lead.email ? gerarLinkContato(lead.email) : null;
   const contatoFallback = !whatsLink && !emailLink ? gerarLinkContato(lead.contato) : null;
-  const instagramHandle = lead.instagram?.replace(/^@/, '');
-  const instagramUrl = instagramHandle
-    ? `https://www.instagram.com/${encodeURIComponent(instagramHandle)}/`
-    : null;
-  const googleMeuNegocioUrl = getHttpUrl(lead.google_meu_negocio);
+  const { instagramHandle, instagramUrl, googleMeuNegocioUrl } = gerarLinksSociaisLead(
+    lead.instagram,
+    lead.google_meu_negocio
+  );
 
   return (
     <div className="lead-card">
@@ -205,14 +205,3 @@ export const CardLead: React.FC<CardLeadProps> = ({
     </div>
   );
 };
-
-function getHttpUrl(value: string | null): string | null {
-  if (!value) return null;
-
-  try {
-    const url = new URL(value);
-    return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : null;
-  } catch {
-    return null;
-  }
-}
