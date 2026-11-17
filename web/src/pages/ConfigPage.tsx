@@ -3,9 +3,11 @@ import { apiFetch } from '../api/client.js';
 import type { Configuracao, UserSummary } from '@radar/shared';
 import { LoadingState, ErrorState } from '../components/FeedbackStates.js';
 import { useAuth } from '../context/AuthContext.js';
+import { useTheme } from '../context/ThemeContext.js';
 
 export const ConfigPage: React.FC = () => {
   const { provider, user } = useAuth();
+  const { theme, setTheme } = useTheme();
   const [config, setConfig] = useState<Configuracao | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
@@ -255,6 +257,110 @@ export const ConfigPage: React.FC = () => {
 
       {config && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* Seção 0: Aparência e Tema da Interface */}
+          <div className="config-section">
+            <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--foreground)', marginBottom: '4px' }}>
+              🎨 Aparência & Tema do Sistema
+            </h3>
+            <p style={{ fontSize: '13px', color: 'var(--muted-foreground)', marginBottom: '16px' }}>
+              Alterne entre a versão escura oficial com luminescência e a versão clara de alto contraste.
+            </p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
+              <div
+                onClick={() => setTheme('dark')}
+                style={{
+                  cursor: 'pointer',
+                  padding: '16px',
+                  borderRadius: 'var(--radius-xl)',
+                  border: theme === 'dark' ? '2px solid var(--color-primary-bright)' : '1px solid var(--border-standard)',
+                  background: theme === 'dark' ? 'rgba(47, 107, 255, 0.12)' : 'var(--surface-container)',
+                  boxShadow: theme === 'dark' ? '0 0 16px rgba(47, 107, 255, 0.25)' : 'none',
+                  transition: 'all 0.2s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px'
+                }}
+              >
+                <div style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: 'var(--radius-lg)',
+                  background: '#070a14',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  display: 'grid',
+                  placeItems: 'center',
+                  fontSize: '18px'
+                }}>
+                  🌙
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 700, fontSize: '14px', color: 'var(--text-primary)' }}>
+                    Modo Escuro (Dark)
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                    Fundo profundo e luminescência
+                  </div>
+                </div>
+                {theme === 'dark' && (
+                  <span style={{
+                    width: '10px',
+                    height: '10px',
+                    borderRadius: '50%',
+                    background: 'var(--color-primary-bright)',
+                    boxShadow: '0 0 8px var(--color-primary-bright)'
+                  }} />
+                )}
+              </div>
+
+              <div
+                onClick={() => setTheme('light')}
+                style={{
+                  cursor: 'pointer',
+                  padding: '16px',
+                  borderRadius: 'var(--radius-xl)',
+                  border: theme === 'light' ? '2px solid var(--color-primary-bright)' : '1px solid var(--border-standard)',
+                  background: theme === 'light' ? 'rgba(47, 107, 255, 0.12)' : 'var(--surface-container)',
+                  boxShadow: theme === 'light' ? '0 0 16px rgba(47, 107, 255, 0.25)' : 'none',
+                  transition: 'all 0.2s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px'
+                }}
+              >
+                <div style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: 'var(--radius-lg)',
+                  background: '#f8fafc',
+                  border: '1px solid rgba(0, 0, 0, 0.15)',
+                  display: 'grid',
+                  placeItems: 'center',
+                  fontSize: '18px'
+                }}>
+                  ☀️
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 700, fontSize: '14px', color: 'var(--text-primary)' }}>
+                    Modo Claro (Light)
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                    Visual claro e alto contraste
+                  </div>
+                </div>
+                {theme === 'light' && (
+                  <span style={{
+                    width: '10px',
+                    height: '10px',
+                    borderRadius: '50%',
+                    background: 'var(--color-primary-bright)',
+                    boxShadow: '0 0 8px var(--color-primary-bright)'
+                  }} />
+                )}
+              </div>
+            </div>
+          </div>
+
           {/* Seção 1: Limites do Radar */}
           <div className="config-section">
             <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--foreground)', marginBottom: '4px' }}>
