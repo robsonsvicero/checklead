@@ -47,15 +47,7 @@ export const Header: React.FC<HeaderProps> = ({ totalAlertas = 0 }) => {
 
             <button
               onClick={handleLogout}
-              style={{
-                background: 'transparent',
-                border: '1px solid var(--line)',
-                color: 'var(--muted)',
-                borderRadius: '6px',
-                padding: '6px 10px',
-                fontSize: '13px',
-                cursor: 'pointer'
-              }}
+              className="btn-action-sm"
               title="Sair do sistema"
             >
               Sair

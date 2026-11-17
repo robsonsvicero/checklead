@@ -1,0 +1,1538 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#070a14" />
+  <title>GestFors — Design System Specification (DS.md)</title>
+  <meta name="description" content="Sistema de Design & Arquitetura Visual para GestFors Soluções Digitais e Ecossistema Micro-SaaS" />
+
+  <!-- Google Fonts: DM Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      /* Cores Base da Marca */
+      --color-primary: #2f6bff;
+      --color-primary-bright: #3b9dff;
+      --color-primary-tint: #b5c4ff;
+      --color-secondary: #7b2ff7;
+      --color-secondary-tint: #d2bbff;
+      --color-success: #10b981;
+      --color-success-glow: #27c93f;
+
+      /* Superfícies */
+      --surface-lowest: #070a14;
+      --surface-dim: #0b0e18;
+      --surface-container-low: #10152a;
+      --surface-container: #141a33;
+      --surface-container-high: #1c2237;
+      --surface-bright: #363944;
+
+      /* Textos */
+      --text-primary: #eef1fb;
+      --text-secondary: #94a3b8;
+      --text-subtle: #64748b;
+
+      /* Bordas & Efeitos */
+      --border-standard: rgba(255, 255, 255, 0.08);
+      --border-hover: rgba(47, 107, 255, 0.40);
+      --border-accent: rgba(123, 47, 247, 0.40);
+      --radius-lg: 8px;
+      --radius-xl: 12px;
+      --radius-2xl: 16px;
+      --radius-full: 9999px;
+
+      --font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --gradient-kinetic: linear-gradient(115deg, #3b9dff 0%, #2f6bff 45%, #7b2ff7 100%);
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      color-scheme: dark;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--surface-lowest);
+      color: var(--text-primary);
+      line-height: 1.6;
+      font-size: 15px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      selection-background-color: rgba(47, 107, 255, 0.35);
+    }
+
+    ::selection {
+      background: rgba(47, 107, 255, 0.35);
+      color: #ffffff;
+    }
+
+    /* Container & Layout */
+    .app-layout {
+      display: flex;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    /* Barra Superior Fixa (Header) */
+    .top-nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      width: 100%;
+      background: rgba(7, 10, 20, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-standard);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 2rem;
+    }
+
+    .brand-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .brand-logo-badge {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: var(--gradient-kinetic);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 16px;
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(47, 107, 255, 0.4);
+    }
+
+    .brand-name {
+      font-weight: 700;
+      font-size: 1.1rem;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+    }
+
+    .brand-badge {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: rgba(47, 107, 255, 0.15);
+      color: var(--color-primary-bright);
+      border: 1px solid rgba(47, 107, 255, 0.3);
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .btn-action-sm {
+      background: var(--surface-container-low);
+      border: 1px solid var(--border-standard);
+      color: var(--text-secondary);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      padding: 6px 14px;
+      border-radius: var(--radius-lg);
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+    }
+
+    .btn-action-sm:hover {
+      color: var(--text-primary);
+      border-color: var(--border-hover);
+      background: var(--surface-container);
+    }
+
+    /* Sidebar Navigation */
+    .sidebar {
+      width: 280px;
+      flex-shrink: 0;
+      position: sticky;
+      top: 57px;
+      height: calc(100vh - 57px);
+      overflow-y: auto;
+      padding: 2rem 1.25rem;
+      background: var(--surface-lowest);
+      border-right: 1px solid var(--border-standard);
+    }
+
+    .sidebar-section-title {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-subtle);
+      margin-bottom: 0.75rem;
+      padding-left: 0.75rem;
+    }
+
+    .sidebar-nav-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .sidebar-link {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 0.75rem;
+      border-radius: var(--radius-lg);
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: all 0.2s ease;
+      border-left: 2px solid transparent;
+    }
+
+    .sidebar-link:hover {
+      color: var(--text-primary);
+      background: var(--surface-container-low);
+      border-left-color: var(--color-primary-bright);
+    }
+
+    .sidebar-link.active {
+      color: var(--color-primary-bright);
+      background: rgba(47, 107, 255, 0.1);
+      border-left-color: var(--color-primary);
+      font-weight: 600;
+    }
+
+    /* Main Content */
+    .main-content {
+      flex: 1;
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 3rem 2.5rem 6rem;
+    }
+
+    /* Hero / Document Header */
+    .doc-hero {
+      margin-bottom: 3.5rem;
+      padding-bottom: 2.5rem;
+      border-bottom: 1px solid var(--border-standard);
+      position: relative;
+    }
+
+    .doc-hero::after {
+      content: '';
+      position: absolute;
+      top: -20px;
+      right: 0;
+      width: 320px;
+      height: 320px;
+      background: radial-gradient(circle, rgba(47, 107, 255, 0.15) 0%, rgba(123, 47, 247, 0.05) 50%, transparent 70%);
+      filter: blur(40px);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .doc-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--color-primary-tint);
+      background: rgba(47, 107, 255, 0.12);
+      border: 1px solid rgba(47, 107, 255, 0.25);
+      padding: 4px 12px;
+      border-radius: var(--radius-full);
+      margin-bottom: 1.25rem;
+    }
+
+    .doc-title {
+      font-size: 44px;
+      font-weight: 700;
+      line-height: 1.15;
+      letter-spacing: -0.03em;
+      color: var(--text-primary);
+      margin-bottom: 0.75rem;
+    }
+
+    .doc-subtitle {
+      font-size: 18px;
+      font-style: italic;
+      color: var(--text-secondary);
+      max-width: 760px;
+      line-height: 1.5;
+    }
+
+    /* Sections */
+    .section-block {
+      margin-bottom: 4rem;
+      scroll-margin-top: 80px;
+    }
+
+    .section-header {
+      margin-bottom: 1.75rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border-standard);
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+    }
+
+    .section-title {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-num {
+      color: var(--color-primary-bright);
+      font-family: var(--font-mono);
+      font-size: 20px;
+    }
+
+    .subsection-title {
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: var(--text-primary);
+      margin: 2rem 0 1rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .lead-text {
+      font-size: 16px;
+      color: var(--text-secondary);
+      margin-bottom: 1.5rem;
+      line-height: 1.7;
+    }
+
+    /* Cards & Containers */
+    .card {
+      background: rgba(16, 21, 42, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border-standard);
+      border-radius: var(--radius-2xl);
+      padding: 1.75rem;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .card:hover {
+      border-color: var(--border-hover);
+      box-shadow: 0 16px 40px rgba(47, 107, 255, 0.12);
+      transform: translateY(-2px);
+    }
+
+    /* Grid de Pilares */
+    .pillars-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.25rem;
+      margin-top: 1rem;
+    }
+
+    .pillar-card {
+      background: var(--surface-container);
+      border: 1px solid var(--border-standard);
+      border-radius: var(--radius-xl);
+      padding: 1.5rem;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.25s ease;
+    }
+
+    .pillar-card:hover {
+      border-color: var(--border-hover);
+      background: var(--surface-container-high);
+      transform: translateY(-2px);
+    }
+
+    .pillar-icon-wrap {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-lg);
+      background: rgba(47, 107, 255, 0.12);
+      border: 1px solid rgba(47, 107, 255, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-primary-bright);
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 15px;
+      margin-bottom: 1rem;
+    }
+
+    .pillar-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 0.5rem;
+    }
+
+    .pillar-desc {
+      font-size: 13.5px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    /* Paletas de Cores */
+    .color-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .swatch-card {
+      background: var(--surface-container);
+      border: 1px solid var(--border-standard);
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s ease;
+    }
+
+    .swatch-card:hover {
+      border-color: var(--border-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    .swatch-preview {
+      height: 80px;
+      width: 100%;
+      position: relative;
+      display: flex;
+      align-items: flex-end;
+      justify-content: flex-end;
+      padding: 8px;
+    }
+
+    .swatch-meta {
+      padding: 0.85rem 1rem;
+    }
+
+    .swatch-title {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 2px;
+    }
+
+    .swatch-role {
+      font-size: 11.5px;
+      color: var(--text-subtle);
+      line-height: 1.4;
+      margin-bottom: 0.5rem;
+    }
+
+    .swatch-hex {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--color-primary-tint);
+      background: rgba(255, 255, 255, 0.05);
+      padding: 2px 6px;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .swatch-copy-hint {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 9px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .swatch-card:hover .swatch-copy-hint {
+      opacity: 1;
+    }
+
+    /* Gradiente Banner */
+    .gradient-banner {
+      border-radius: var(--radius-xl);
+      background: var(--gradient-kinetic);
+      padding: 2rem;
+      position: relative;
+      overflow: hidden;
+      margin: 1rem 0 2rem;
+      box-shadow: 0 8px 32px rgba(47, 107, 255, 0.25);
+    }
+
+    .gradient-banner-content {
+      position: relative;
+      z-index: 1;
+      max-width: 500px;
+    }
+
+    .gradient-banner h4 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 6px;
+    }
+
+    .gradient-banner p {
+      font-size: 13.5px;
+      color: rgba(255, 255, 255, 0.9);
+      margin-bottom: 12px;
+    }
+
+    /* Code Blocks */
+    .code-box {
+      background: #090d1a;
+      border: 1px solid var(--border-standard);
+      border-radius: var(--radius-lg);
+      padding: 1rem 1.25rem;
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      color: var(--color-primary-tint);
+      overflow-x: auto;
+      position: relative;
+      margin: 0.75rem 0;
+    }
+
+    /* Tabelas */
+    .table-container {
+      width: 100%;
+      overflow-x: auto;
+      background: var(--surface-container-low);
+      border: 1px solid var(--border-standard);
+      border-radius: var(--radius-xl);
+      margin: 1rem 0 2rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13.5px;
+      text-align: left;
+    }
+
+    th {
+      background: var(--surface-container);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-secondary);
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border-standard);
+    }
+
+    td {
+      padding: 0.9rem 1.25rem;
+      border-bottom: 1px solid var(--border-standard);
+      color: var(--text-secondary);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+      color: var(--text-primary);
+    }
+
+    .token-pill {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--color-primary-bright);
+      background: rgba(47, 107, 255, 0.12);
+      border: 1px solid rgba(47, 107, 255, 0.25);
+      padding: 2px 8px;
+      border-radius: 4px;
+      display: inline-block;
+    }
+
+    /* Component Showcases */
+    .component-box {
+      background: var(--surface-container-low);
+      border: 1px solid var(--border-standard);
+      border-radius: var(--radius-xl);
+      padding: 2rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .component-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 1.25rem;
+      margin-top: 1rem;
+    }
+
+    /* Buttons */
+    .btn-gestfors-primary {
+      background: var(--gradient-kinetic);
+      color: #ffffff;
+      font-family: var(--font-sans);
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      padding: 10px 22px;
+      border-radius: var(--radius-xl);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 20px rgba(47, 107, 255, 0.35);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      text-decoration: none;
+    }
+
+    .btn-gestfors-primary:hover {
+      filter: brightness(1.1);
+      box-shadow: 0 6px 26px rgba(47, 107, 255, 0.5);
+      transform: translateY(-1px);
+    }
+
+    .btn-gestfors-secondary {
+      background: rgba(16, 21, 42, 0.60);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      font-weight: 600;
+      padding: 10px 22px;
+      border-radius: var(--radius-xl);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      text-decoration: none;
+    }
+
+    .btn-gestfors-secondary svg {
+      color: var(--color-primary);
+    }
+
+    .btn-gestfors-secondary:hover {
+      background: rgba(16, 21, 42, 0.95);
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+
+    /* Badges & Status Chips */
+    .badge-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: var(--radius-full);
+      letter-spacing: 0.04em;
+    }
+
+    .badge-status-active {
+      background: rgba(16, 185, 129, 0.10);
+      color: var(--color-success);
+      border: 1px solid rgba(16, 185, 129, 0.30);
+    }
+
+    .badge-status-active .pulse-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--color-success-glow);
+      box-shadow: 0 0 8px var(--color-success-glow);
+      position: relative;
+    }
+
+    .badge-status-active .pulse-dot::after {
+      content: '';
+      position: absolute;
+      top: -3px;
+      left: -3px;
+      right: -3px;
+      bottom: -3px;
+      border-radius: 50%;
+      border: 1.5px solid var(--color-success);
+      animation: pulsePing 2s infinite ease-out;
+    }
+
+    @keyframes pulsePing {
+      0% { transform: scale(0.8); opacity: 1; }
+      100% { transform: scale(2.2); opacity: 0; }
+    }
+
+    .badge-status-dev {
+      background: rgba(123, 47, 247, 0.10);
+      color: var(--color-secondary-tint);
+      border: 1px solid rgba(123, 47, 247, 0.30);
+    }
+
+    .badge-status-dev .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--color-secondary);
+    }
+
+    .badge-status-pipeline {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-secondary);
+      border: 1px solid rgba(255, 255, 255, 0.10);
+    }
+
+    .badge-status-pipeline .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--text-subtle);
+    }
+
+    /* Cards Mockups */
+    .mockup-grid {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 1.5rem;
+      margin-top: 1rem;
+    }
+
+    @media (max-width: 900px) {
+      .mockup-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .flagship-card {
+      background: var(--surface-container);
+      border: 1px solid var(--border-standard);
+      border-radius: var(--radius-2xl);
+      padding: 1.75rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .flagship-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 140px;
+      height: 140px;
+      background: radial-gradient(circle, rgba(47, 107, 255, 0.25) 0%, transparent 70%);
+      filter: blur(24px);
+    }
+
+    .mockup-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 1.25rem;
+    }
+
+    .mockup-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .mockup-tag {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--color-primary-tint);
+    }
+
+    .mockup-metric-box {
+      background: var(--surface-container-high);
+      border: 1px solid var(--border-standard);
+      border-radius: var(--radius-lg);
+      padding: 1rem;
+      margin-top: 1rem;
+      display: flex;
+      justify-content: space-around;
+      text-align: center;
+    }
+
+    .metric-item-val {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--color-primary-bright);
+    }
+
+    .metric-item-lbl {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: var(--text-subtle);
+    }
+
+    /* Rules Checklist */
+    .rules-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .rule-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      background: var(--surface-container);
+      border: 1px solid var(--border-standard);
+      border-radius: var(--radius-lg);
+      padding: 1rem 1.25rem;
+    }
+
+    .rule-icon {
+      flex-shrink: 0;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--color-success);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+    }
+
+    /* Toast notification */
+    #copy-toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--surface-container-high);
+      border: 1px solid var(--border-hover);
+      color: var(--text-primary);
+      padding: 0.75rem 1.25rem;
+      border-radius: var(--radius-lg);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      opacity: 0;
+      transform: translateY(12px);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 999;
+      pointer-events: none;
+    }
+
+    #copy-toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Responsive */
+    @media (max-width: 840px) {
+      .sidebar {
+        display: none;
+      }
+      .main-content {
+        padding: 2rem 1.25rem 4rem;
+      }
+      .doc-title {
+        font-size: 32px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header class="top-nav">
+    <div class="brand-wrap">
+      <div class="brand-logo-badge">G</div>
+      <div>
+        <span class="brand-name">GestFors</span>
+      </div>
+      <span class="brand-badge">Design System 1.0</span>
+    </div>
+    <div class="nav-actions">
+      <a href="./gestfors_ds.md" class="btn-action-sm" title="Ver arquivo original Markdown">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+        <span>DS.md</span>
+      </a>
+      <button onclick="window.print()" class="btn-action-sm" title="Imprimir documentação">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+        <span>Imprimir</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="app-layout">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="sidebar-section-title">Navegação Rápida</div>
+      <ul class="sidebar-nav-list">
+        <li><a href="#principios" class="sidebar-link active">1. Princípios & Identidade</a></li>
+        <li><a href="#cores" class="sidebar-link">2. Cores & Tokens</a></li>
+        <li><a href="#tipografia" class="sidebar-link">3. Tipografia & Escala</a></li>
+        <li><a href="#elevacao" class="sidebar-link">4. Elevação & Bordas</a></li>
+        <li><a href="#componentes" class="sidebar-link">5. Componentes</a></li>
+        <li><a href="#governanca" class="sidebar-link">6. Governança & Regras</a></li>
+      </ul>
+
+      <div class="sidebar-section-title" style="margin-top: 2rem;">Especificação</div>
+      <div style="padding: 0 0.75rem; font-size: 12px; color: var(--text-subtle); line-height: 1.5;">
+        Documento gerado a partir de <code style="font-family: var(--font-mono); color: var(--color-primary-tint);">gestfors_ds.md</code>.
+        Atualizado para o ecossistema Micro-SaaS GestFors.
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+
+      <!-- Document Hero -->
+      <section class="doc-hero">
+        <div class="doc-eyebrow">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          Especificação Técnica Oficial
+        </div>
+        <h1 class="doc-title">GestFors Design System Specification</h1>
+        <p class="doc-subtitle">Sistema de Design & Arquitetura Visual para GestFors Soluções Digitais e Ecossistema Micro-SaaS</p>
+      </section>
+
+      <!-- 1. Princípios de Design & Identidade -->
+      <section id="principios" class="section-block">
+        <div class="section-header">
+          <h2 class="section-title"><span class="section-num">01.</span> Princípios de Design & Identidade</h2>
+        </div>
+        <p class="lead-text">
+          O Design System da <strong>GestFors Soluções Digitais</strong> reflete o posicionamento da marca: uma empresa de tecnologia focada em engenharia de produto, micro-SaaS enxutos, arquitetura modular de alta performance (edge routing, zero bloat) e interfaces sem atritos para autônomos e especialistas de nicho.
+        </p>
+
+        <h3 class="subsection-title">Pilares Fundamentais:</h3>
+        <div class="pillars-grid">
+          <div class="pillar-card">
+            <div class="pillar-icon-wrap">01</div>
+            <h4 class="pillar-title">Engenharia & Rigor Técnico</h4>
+            <p class="pillar-desc">Elementos visuais inspirados em esquemas de sistemas, dados em tempo real, telemetria, nós de rede e código declarativo limpo.</p>
+          </div>
+          <div class="pillar-card">
+            <div class="pillar-icon-wrap">02</div>
+            <h4 class="pillar-title">Alta Densidade com Amplo Respiro</h4>
+            <p class="pillar-desc">Grid estruturado e rigoroso com amplo espaço negativo (whitespace/darkspace), evitando sobrecarga cognitiva.</p>
+          </div>
+          <div class="pillar-card">
+            <div class="pillar-icon-wrap">03</div>
+            <h4 class="pillar-title">Profundidade Óptica & Luminescência</h4>
+            <p class="pillar-desc">Fundo escuro profundo (<code>#070a14</code> / <code>#0b0e18</code>) combinado com cartões translúcidos em camadas (<code>backdrop-blur</code>) e glows focais derivados da paleta primária.</p>
+          </div>
+          <div class="pillar-card">
+            <div class="pillar-icon-wrap">04</div>
+            <h4 class="pillar-title">Sem Artifícios Genéricos</h4>
+            <p class="pillar-desc">Ausência total de clichês de templates de startups, ilustrações vazias ou buzzwords de marketing. Cada elemento tem função e utilidade.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. Cores & Tokens Semânticos -->
+      <section id="cores" class="section-block">
+        <div class="section-header">
+          <h2 class="section-title"><span class="section-num">02.</span> Cores & Tokens Semânticos</h2>
+        </div>
+
+        <h3 class="subsection-title">2.1 Cores Base da Marca (Brand Palettes)</h3>
+        <p class="lead-text" style="font-size: 13.5px; margin-bottom: 1rem;">Clique no cartão para copiar o código hexadecimal.</p>
+        <div class="color-grid">
+          <!-- Primary -->
+          <div class="swatch-card" onclick="copyToken('#2f6bff', 'Primary / Cobalt Blue')">
+            <div class="swatch-preview" style="background: #2f6bff;">
+              <span class="swatch-copy-hint">Copiar HEX</span>
+            </div>
+            <div class="swatch-meta">
+              <div class="swatch-title">Primary / Cobalt Blue</div>
+              <div class="swatch-role">Ação principal, destaques de conectividade, nós de API</div>
+              <span class="swatch-hex">#2f6bff</span>
+            </div>
+          </div>
+          <!-- Primary Bright -->
+          <div class="swatch-card" onclick="copyToken('#3b9dff', 'Primary Bright / Accent')">
+            <div class="swatch-preview" style="background: #3b9dff;">
+              <span class="swatch-copy-hint">Copiar HEX</span>
+            </div>
+            <div class="swatch-meta">
+              <div class="swatch-title">Primary Bright / Accent</div>
+              <div class="swatch-role">Ponto focal de iluminação e gradientes</div>
+              <span class="swatch-hex">#3b9dff</span>
+            </div>
+          </div>
+          <!-- Primary Tint -->
+          <div class="swatch-card" onclick="copyToken('#b5c4ff', 'Primary Tint / Soft')">
+            <div class="swatch-preview" style="background: #b5c4ff;">
+              <span class="swatch-copy-hint">Copiar HEX</span>
+            </div>
+            <div class="swatch-meta">
+              <div class="swatch-title">Primary Tint / Soft</div>
+              <div class="swatch-role">Eyebrows, tags técnicas, subtítulos suaves</div>
+              <span class="swatch-hex" style="color: #070a14; background: rgba(0,0,0,0.1);">#b5c4ff</span>
+            </div>
+          </div>
+          <!-- Secondary -->
+          <div class="swatch-card" onclick="copyToken('#7b2ff7', 'Secondary / Kinetic Violet')">
+            <div class="swatch-preview" style="background: #7b2ff7;">
+              <span class="swatch-copy-hint">Copiar HEX</span>
+            </div>
+            <div class="swatch-meta">
+              <div class="swatch-title">Secondary / Kinetic Violet</div>
+              <div class="swatch-role">Módulos em desenvolvimento, inovação, transições</div>
+              <span class="swatch-hex">#7b2ff7</span>
+            </div>
+          </div>
+          <!-- Secondary Tint -->
+          <div class="swatch-card" onclick="copyToken('#d2bbff', 'Secondary Tint')">
+            <div class="swatch-preview" style="background: #d2bbff;">
+              <span class="swatch-copy-hint">Copiar HEX</span>
+            </div>
+            <div class="swatch-meta">
+              <div class="swatch-title">Secondary Tint</div>
+              <div class="swatch-role">Labels e badges em segundo nível</div>
+              <span class="swatch-hex" style="color: #070a14; background: rgba(0,0,0,0.1);">#d2bbff</span>
+            </div>
+          </div>
+          <!-- Success -->
+          <div class="swatch-card" onclick="copyToken('#10b981', 'Success / Emerald')">
+            <div class="swatch-preview" style="background: #10b981;">
+              <span class="swatch-copy-hint">Copiar HEX</span>
+            </div>
+            <div class="swatch-meta">
+              <div class="swatch-title">Success / Emerald</div>
+              <div class="swatch-role">Status em produção, SLA contínuo, validação ativa</div>
+              <span class="swatch-hex">#10b981</span>
+            </div>
+          </div>
+          <!-- Success Glow -->
+          <div class="swatch-card" onclick="copyToken('#27c93f', 'Success Glow')">
+            <div class="swatch-preview" style="background: #27c93f;">
+              <span class="swatch-copy-hint">Copiar HEX</span>
+            </div>
+            <div class="swatch-meta">
+              <div class="swatch-title">Success Glow</div>
+              <div class="swatch-role">Indicadores de status do sistema</div>
+              <span class="swatch-hex" style="color: #070a14; background: rgba(0,0,0,0.1);">#27c93f</span>
+            </div>
+          </div>
+        </div>
+
+        <h3 class="subsection-title">2.2 Superfícies (Dark Surfaces)</h3>
+        <div class="color-grid">
+          <div class="swatch-card" onclick="copyToken('#070a14', 'Surface Lowest')">
+            <div class="swatch-preview" style="background: #070a14; border-bottom: 1px solid rgba(255,255,255,0.08);">
+              <span class="swatch-copy-hint">Copiar HEX</span>
+            </div>
+            <div class="swatch-meta">
+              <div class="swatch-title">Surface Lowest</div>
+              <div class="swatch-role">Canvas Base da aplicação</div>
+              <span class="swatch-hex">#070a14</span>
+            </div>
+          </div>
+          <div class="swatch-card" onclick="copyToken('#0b0e18', 'Surface Dim')">
+            <div class="swatch-preview" style="background: #0b0e18; border-bottom: 1px solid rgba(255,255,255,0.08);">
+              <span class="swatch-copy-hint">Copiar HEX</span>
+            </div>
+            <div class="swatch-meta">
+              <div class="swatch-title">Surface Dim</div>
+              <div class="swatch-role">Seções secundárias</div>
+              <span class="swatch-hex">#0b0e18</span>
+            </div>
+          </div>
+          <div class="swatch-card" onclick="copyToken('#10152a', 'Surface Container Low')">
+            <div class="swatch-preview" style="background: #10152a;">
+              <span class="swatch-copy-hint">Copiar HEX</span>
+            </div>
+            <div class="swatch-meta">
+              <div class="swatch-title">Surface Container Low</div>
+              <div class="swatch-role">Backdrop para cartões e modais (80-95%)</div>
+              <span class="swatch-hex">#10152a</span>
+            </div>
+          </div>
+          <div class="swatch-card" onclick="copyToken('#141a33', 'Surface Container')">
+            <div class="swatch-preview" style="background: #141a33;">
+              <span class="swatch-copy-hint">Copiar HEX</span>
+            </div>
+            <div class="swatch-meta">
+              <div class="swatch-title">Surface Container</div>
+              <div class="swatch-role">Card Base</div>
+              <span class="swatch-hex">#141a33</span>
+            </div>
+          </div>
+          <div class="swatch-card" onclick="copyToken('#1c2237', 'Surface Container High')">
+            <div class="swatch-preview" style="background: #1c2237;">
+              <span class="swatch-copy-hint">Copiar HEX</span>
+            </div>
+            <div class="swatch-meta">
+              <div class="swatch-title">Surface Container High</div>
+              <div class="swatch-role">Camadas elevadas de interação</div>
+              <span class="swatch-hex">#1c2237</span>
+            </div>
+          </div>
+          <div class="swatch-card" onclick="copyToken('#363944', 'Surface Bright')">
+            <div class="swatch-preview" style="background: #363944;">
+              <span class="swatch-copy-hint">Copiar HEX</span>
+            </div>
+            <div class="swatch-meta">
+              <div class="swatch-title">Surface Bright</div>
+              <div class="swatch-role">Hover & Bordas de contraste</div>
+              <span class="swatch-hex">#363944</span>
+            </div>
+          </div>
+        </div>
+
+        <h3 class="subsection-title">2.3 Tipografia e Cores de Texto (On-Surface)</h3>
+        <div class="color-grid">
+          <div class="swatch-card" onclick="copyToken('#eef1fb', 'Text Primary')">
+            <div class="swatch-preview" style="background: #eef1fb;">
+              <span class="swatch-copy-hint">Copiar HEX</span>
+            </div>
+            <div class="swatch-meta">
+              <div class="swatch-title">Text Primary (On-Surface)</div>
+              <div class="swatch-role">Títulos H1-H4, métricas, ênfases</div>
+              <span class="swatch-hex" style="color: #070a14; background: rgba(0,0,0,0.1);">#eef1fb</span>
+            </div>
+          </div>
+          <div class="swatch-card" onclick="copyToken('#94a3b8', 'Text Secondary')">
+            <div class="swatch-preview" style="background: #94a3b8;">
+              <span class="swatch-copy-hint">Copiar HEX</span>
+            </div>
+            <div class="swatch-meta">
+              <div class="swatch-title">Text Secondary (Variant)</div>
+              <div class="swatch-role">Parágrafos explicativos, descrições, labels</div>
+              <span class="swatch-hex" style="color: #070a14; background: rgba(0,0,0,0.1);">#94a3b8</span>
+            </div>
+          </div>
+          <div class="swatch-card" onclick="copyToken('#64748b', 'Text Subtle')">
+            <div class="swatch-preview" style="background: #64748b;">
+              <span class="swatch-copy-hint">Copiar HEX</span>
+            </div>
+            <div class="swatch-meta">
+              <div class="swatch-title">Text Subtle / Muted</div>
+              <div class="swatch-role">Metadados secundários, timestamps, borders</div>
+              <span class="swatch-hex">#64748b</span>
+            </div>
+          </div>
+        </div>
+
+        <h3 class="subsection-title">2.4 Gradiente Oficial da Marca</h3>
+        <div class="gradient-banner">
+          <div class="gradient-banner-content">
+            <h4>Kinetic Core Gradient</h4>
+            <p>Transição de alta fidelidade entre o ciano/azul elétrico e o violeta cinético.</p>
+          </div>
+        </div>
+        <div class="code-box">
+/* Kinetic Core Gradient */
+background: linear-gradient(115deg, #3b9dff 0%, #2f6bff 45%, #7b2ff7 100%);
+        </div>
+      </section>
+
+      <!-- 3. Tipografia & Escala de Tipos -->
+      <section id="tipografia" class="section-block">
+        <div class="section-header">
+          <h2 class="section-title"><span class="section-num">03.</span> Tipografia & Escala de Tipos</h2>
+        </div>
+        <p class="lead-text">
+          A tipografia unificada é a <strong>DM Sans</strong> para todas as instâncias de interface, combinada com fontes monoespaçadas de sistema (<strong>JetBrains Mono</strong> / SF Mono / Consolas) para telemetria, logs de sistema e parâmetros de engenharia.
+        </p>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Token / Nível</th>
+                <th>Família</th>
+                <th>Peso</th>
+                <th>Tamanho</th>
+                <th>Line-Height</th>
+                <th>Tracking</th>
+                <th>Aplicação</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="token-pill">display-xl</span></td>
+                <td>DM Sans</td>
+                <td>700 Bold</td>
+                <td>56px (3.5rem)</td>
+                <td>1.12</td>
+                <td>-0.03em</td>
+                <td>Headlines Hero Desktop</td>
+              </tr>
+              <tr>
+                <td><span class="token-pill">display-lg</span></td>
+                <td>DM Sans</td>
+                <td>700 Bold</td>
+                <td>44px (2.75rem)</td>
+                <td>1.18</td>
+                <td>-0.03em</td>
+                <td>Títulos de Seção H2 Desktop</td>
+              </tr>
+              <tr>
+                <td><span class="token-pill">title-lg</span></td>
+                <td>DM Sans</td>
+                <td>600 SemiBold</td>
+                <td>24px (1.5rem)</td>
+                <td>1.3</td>
+                <td>-0.02em</td>
+                <td>Títulos de Cartões e Produtos</td>
+              </tr>
+              <tr>
+                <td><span class="token-pill">title-md</span></td>
+                <td>DM Sans</td>
+                <td>600 SemiBold</td>
+                <td>18px (1.125rem)</td>
+                <td>1.4</td>
+                <td>-0.01em</td>
+                <td>Subtítulos e Módulos</td>
+              </tr>
+              <tr>
+                <td><span class="token-pill">body-lg</span></td>
+                <td>DM Sans</td>
+                <td>400 Regular</td>
+                <td>18px (1.125rem)</td>
+                <td>1.6</td>
+                <td>normal</td>
+                <td>Parágrafos de Introdução</td>
+              </tr>
+              <tr>
+                <td><span class="token-pill">body-md</span></td>
+                <td>DM Sans</td>
+                <td>400 Regular</td>
+                <td>14px–15px</td>
+                <td>1.6</td>
+                <td>normal</td>
+                <td>Parágrafos e Descrições de Card</td>
+              </tr>
+              <tr>
+                <td><span class="token-pill">body-sm</span></td>
+                <td>DM Sans</td>
+                <td>400 Regular</td>
+                <td>12px–13px</td>
+                <td>1.5</td>
+                <td>normal</td>
+                <td>Legendas, notas de rodapé, tabelas</td>
+              </tr>
+              <tr>
+                <td><span class="token-pill">label-mono</span></td>
+                <td>JetBrains Mono</td>
+                <td>600 SemiBold</td>
+                <td>10px–11px</td>
+                <td>1.2</td>
+                <td>+0.08em</td>
+                <td>Badges de status, endpoints, tags de arquitetura</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 4. Elevação, Bordas e Efeitos -->
+      <section id="elevacao" class="section-block">
+        <div class="section-header">
+          <h2 class="section-title"><span class="section-num">04.</span> Elevação, Bordas e Efeitos</h2>
+        </div>
+
+        <h3 class="subsection-title">Raios de Borda (Border Radius)</h3>
+        <div class="pillars-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+          <div class="pillar-card" style="border-radius: 8px;">
+            <span class="token-pill">rounded-lg: 8px</span>
+            <p class="pillar-desc" style="margin-top: 8px;">Inputs, badges de métricas, itens de lista internos.</p>
+          </div>
+          <div class="pillar-card" style="border-radius: 12px;">
+            <span class="token-pill">rounded-xl: 12px</span>
+            <p class="pillar-desc" style="margin-top: 8px;">Botões principais, seletores, sub-cards.</p>
+          </div>
+          <div class="pillar-card" style="border-radius: 16px;">
+            <span class="token-pill">rounded-2xl: 16px</span>
+            <p class="pillar-desc" style="margin-top: 8px;">Cartões mestres de produto, seções em destaque, modais.</p>
+          </div>
+          <div class="pillar-card" style="border-radius: 9999px; text-align: center;">
+            <span class="token-pill">rounded-full: 9999px</span>
+            <p class="pillar-desc" style="margin-top: 8px;">Pills de status, chips, indicadores.</p>
+          </div>
+        </div>
+
+        <h3 class="subsection-title">Bordas & Delimitadores</h3>
+        <div class="code-box">
+/* Standard Border */
+border: 1px solid rgba(255, 255, 255, 0.08);
+
+/* Interactive Border Hover */
+border: 1px solid rgba(47, 107, 255, 0.40);
+
+/* Active / Accent Border */
+border: 1px solid rgba(123, 47, 247, 0.40);
+        </div>
+
+        <h3 class="subsection-title">Efeitos de Superfície & Sombras</h3>
+        <div class="code-box">
+/* Card Backdrop Blur */
+backdrop-filter: blur(16px);
+background-color: rgba(16, 21, 42, 0.85);
+
+/* Soft Glow Primary */
+box-shadow: 0 4px 24px rgba(47, 107, 255, 0.35);
+
+/* Card Hover Elevation */
+box-shadow: 0 16px 40px rgba(47, 107, 255, 0.15);
+transform: translateY(-2px);
+        </div>
+      </section>
+
+      <!-- 5. Biblioteca de Componentes -->
+      <section id="componentes" class="section-block">
+        <div class="section-header">
+          <h2 class="section-title"><span class="section-num">05.</span> Biblioteca de Componentes</h2>
+        </div>
+
+        <!-- 5.1 Botões -->
+        <h3 class="subsection-title">5.1 Botões (Actions)</h3>
+        <div class="component-box">
+          <p class="pillar-desc" style="margin-bottom: 1rem;">Demonstração interativa dos estados dos botões do sistema:</p>
+          <div class="component-row">
+            <button class="btn-gestfors-primary">
+              <span>Iniciar Projeto</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            </button>
+
+            <button class="btn-gestfors-secondary">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
+              <span>Explorar Arquitetura</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 5.2 Badges & Status Chips -->
+        <h3 class="subsection-title">5.2 Badges & Status Chips</h3>
+        <div class="component-box">
+          <p class="pillar-desc" style="margin-bottom: 1rem;">Chips semânticos de ciclo de vida e telemetria:</p>
+          <div class="component-row">
+            <div class="badge-status badge-status-active">
+              <span class="pulse-dot"></span>
+              <span>PRODUÇÃO ATIVA</span>
+            </div>
+
+            <div class="badge-status badge-status-dev">
+              <span class="dot"></span>
+              <span>EM DESENVOLVIMENTO</span>
+            </div>
+
+            <div class="badge-status badge-status-pipeline">
+              <span class="dot"></span>
+              <span>PIPELINE / PESQUISA</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5.3 Arquitetura de Cartões -->
+        <h3 class="subsection-title">5.3 Arquitetura de Cartões</h3>
+        <div class="mockup-grid">
+          <!-- Flagship Card (MAEZTRO) -->
+          <div class="flagship-card">
+            <div>
+              <div class="mockup-header">
+                <div>
+                  <span class="mockup-tag">FLAGSHIP MICRO-SAAS</span>
+                  <h4 class="mockup-title">MAEZTRO</h4>
+                </div>
+                <div class="badge-status badge-status-active">
+                  <span class="pulse-dot"></span>
+                  <span>LIVE</span>
+                </div>
+              </div>
+              <p class="pillar-desc">
+                Ecossistema de gestão de aulas particulares e estúdios educacionais com edge syncing e zero latência.
+              </p>
+            </div>
+            <div class="mockup-metric-box">
+              <div>
+                <div class="metric-item-val">99.98%</div>
+                <div class="metric-item-lbl">UPTIME SLA</div>
+              </div>
+              <div>
+                <div class="metric-item-val">&lt;45ms</div>
+                <div class="metric-item-lbl">LATÊNCIA MÉDIA</div>
+              </div>
+              <div>
+                <div class="metric-item-val">Zero</div>
+                <div class="metric-item-lbl">BLOATWARE</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Secondary Product Card -->
+          <div class="pillar-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <span class="token-pill">MICRO-SAAS</span>
+                <div class="badge-status badge-status-dev">
+                  <span class="dot"></span>
+                  <span>DEV</span>
+                </div>
+              </div>
+              <h4 class="mockup-title" style="font-size: 18px;">AgendaVitta</h4>
+              <p class="pillar-desc">
+                Agendamento inteligente sem fricção para especialistas autônomos de saúde e bem-estar.
+              </p>
+            </div>
+            <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-standard); font-family: var(--font-mono); font-size: 11px; color: var(--color-primary-tint);">
+              → Modulação de horários & pagamentos
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. Governança e Regras de Implementação -->
+      <section id="governanca" class="section-block">
+        <div class="section-header">
+          <h2 class="section-title"><span class="section-num">06.</span> Governança e Regras de Implementação</h2>
+        </div>
+
+        <ul class="rules-list">
+          <li class="rule-item">
+            <div class="rule-icon">✓</div>
+            <div>
+              <strong style="color: var(--text-primary);">Restrição Tipográfica:</strong>
+              <span style="color: var(--text-secondary);"> Não utilizar fontes de template serifadas ou handwriting. Apenas DM Sans e fontes monoespaçadas técnicas (JetBrains Mono).</span>
+            </div>
+          </li>
+          <li class="rule-item">
+            <div class="rule-icon">✓</div>
+            <div>
+              <strong style="color: var(--text-primary);">Curvas de Aceleração e Física:</strong>
+              <span style="color: var(--text-secondary);"> Toda animação deve priorizar transições de aceleração suave (<code>cubic-bezier(0.16, 1, 0.3, 1)</code> ou <code>ease-out</code>) com duração máxima de 250ms a 350ms.</span>
+            </div>
+          </li>
+          <li class="rule-item">
+            <div class="rule-icon">✓</div>
+            <div>
+              <strong style="color: var(--text-primary);">Acessibilidade e Contraste:</strong>
+              <span style="color: var(--text-secondary);"> Preservar o contraste mínimo <strong>WCAG AAA</strong> para todos os blocos de texto principais sobre fundos pretos/azul-escuros (<code>#070a14</code> / <code>#10152a</code>).</span>
+            </div>
+          </li>
+        </ul>
+      </section>
+
+      <!-- Footer -->
+      <footer style="margin-top: 5rem; padding-top: 2rem; border-top: 1px solid var(--border-standard); display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--text-subtle);">
+        <div>GestFors Soluções Digitais &copy; 2026. Todos os direitos reservados.</div>
+        <div style="font-family: var(--font-mono); font-size: 11px;">DESIGN SYSTEM SPECIFICATION</div>
+      </footer>
+
+    </main>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="copy-toast">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--color-success);"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    <span id="copy-toast-msg">Copiado para a área de transferência!</span>
+  </div>
+
+  <script>
+    // Interação de Cópia dos Tokens de Cores
+    function copyToken(hex, name) {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(hex).then(() => {
+          showToast(`Copiado: ${hex} (${name})`);
+        }).catch(() => {
+          fallbackCopy(hex, name);
+        });
+      } else {
+        fallbackCopy(hex, name);
+      }
+    }
+
+    function fallbackCopy(hex, name) {
+      const el = document.createElement('textarea');
+      el.value = hex;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+      showToast(`Copiado: ${hex} (${name})`);
+    }
+
+    let toastTimer;
+    function showToast(msg) {
+      const toast = document.getElementById('copy-toast');
+      const toastMsg = document.getElementById('copy-toast-msg');
+      toastMsg.innerText = msg;
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2500);
+    }
+
+    // ScrollSpy para Sidebar Links
+    const sections = document.querySelectorAll('.section-block, .doc-hero');
+    const navLinks = document.querySelectorAll('.sidebar-link');
+
+    window.addEventListener('scroll', () => {
+      let currentId = '';
+      sections.forEach(section => {
+        const top = section.offsetTop - 120;
+        if (window.scrollY >= top) {
+          currentId = section.getAttribute('id');
+        }
+      });
+
+      if (currentId) {
+        navLinks.forEach(link => {
+          link.classList.remove('active');
+          if (link.getAttribute('href') === `#${currentId}`) {
+            link.classList.add('active');
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html>
