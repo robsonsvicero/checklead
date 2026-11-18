@@ -641,7 +641,13 @@ button, input, select, textarea {
   box-shadow: var(--shadow-card);
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
-  overflow: hidden;
+}
+
+.alerta-card:has(.acoes-secundarias[open]),
+.lead-card:has(.acoes-secundarias[open]),
+.alerta-card:focus-within,
+.lead-card:focus-within {
+  z-index: 50;
 }
 
 .alerta-card::before {
@@ -651,9 +657,9 @@ button, input, select, textarea {
   right: 0;
   width: 120px;
   height: 120px;
-  background: radial-gradient(circle, rgba(245, 158, 11, 0.15) 0%, transparent 70%);
-  filter: blur(20px);
+  background: radial-gradient(circle at top right, rgba(245, 158, 11, 0.15) 0%, transparent 70%);
   pointer-events: none;
+  border-radius: inherit;
 }
 
 [data-theme="light"] .alerta-card {
@@ -661,7 +667,7 @@ button, input, select, textarea {
 }
 
 [data-theme="light"] .alerta-card::before {
-  background: radial-gradient(circle, rgba(245, 158, 11, 0.08) 0%, transparent 70%);
+  background: radial-gradient(circle at top right, rgba(245, 158, 11, 0.08) 0%, transparent 70%);
 }
 
 .alerta-card:hover {
@@ -972,6 +978,10 @@ button, input, select, textarea {
   position: relative;
 }
 
+.acoes-secundarias[open] {
+  z-index: 60;
+}
+
 .acoes-secundarias > summary {
   list-style: none;
   user-select: none;
@@ -985,7 +995,7 @@ button, input, select, textarea {
   position: absolute;
   top: calc(100% + 6px);
   left: 0;
-  z-index: 60;
+  z-index: 100;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -995,11 +1005,13 @@ button, input, select, textarea {
   background: var(--surface-container);
   border: 1px solid var(--border-hover);
   border-radius: var(--radius-xl);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
 }
 
 [data-theme="light"] .acoes-menu {
-  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+  background: #ffffff;
+  border-color: var(--border-hover);
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.15);
 }
 
 .acoes-menu .btn-acao {
@@ -1029,18 +1041,21 @@ button, input, select, textarea {
 [data-theme="light"] .btn-acao {
   background: #ffffff;
   border-color: var(--border-standard);
+  color: var(--text-primary);
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
-.btn-acao:hover {
+.btn-acao:not(.primary):not(.success):not(.danger):not(.contact-whatsapp):not(.contact-email):hover {
   transform: translateY(-1px);
   background: rgba(16, 21, 42, 0.95);
   border-color: rgba(255, 255, 255, 0.25);
+  color: var(--text-primary);
 }
 
-[data-theme="light"] .btn-acao:hover {
-  background: #f8fafc;
+[data-theme="light"] .btn-acao:not(.primary):not(.success):not(.danger):not(.contact-whatsapp):not(.contact-email):hover {
+  background: #f1f5f9;
   border-color: var(--border-hover);
+  color: var(--text-primary);
 }
 
 .btn-acao:focus-visible {
@@ -1050,17 +1065,26 @@ button, input, select, textarea {
 
 .btn-acao.primary {
   background: var(--gradient-kinetic);
-  color: #ffffff;
+  color: #ffffff !important;
   border: none;
   border-radius: var(--radius-xl);
   box-shadow: 0 4px 20px rgba(47, 107, 255, 0.35);
   font-weight: 600;
 }
 
-.btn-acao.primary:hover {
-  filter: brightness(1.1);
+.btn-acao.primary:hover,
+[data-theme="light"] .btn-acao.primary:hover {
+  background: var(--gradient-kinetic) !important;
+  color: #ffffff !important;
+  filter: brightness(1.12);
   box-shadow: 0 6px 26px rgba(47, 107, 255, 0.5);
   transform: translateY(-1px);
+}
+
+[data-theme="light"] .btn-acao.primary {
+  background: var(--gradient-kinetic);
+  color: #ffffff !important;
+  box-shadow: 0 4px 16px rgba(47, 107, 255, 0.3);
 }
 
 .btn-acao.success {
@@ -1075,9 +1099,11 @@ button, input, select, textarea {
   border-color: #a7f3d0;
 }
 
-.btn-acao.success:hover {
-  background: #10b981;
-  color: #ffffff;
+.btn-acao.success:hover,
+[data-theme="light"] .btn-acao.success:hover {
+  background: #10b981 !important;
+  color: #ffffff !important;
+  border-color: #10b981;
 }
 
 .btn-acao.danger {
@@ -1092,9 +1118,11 @@ button, input, select, textarea {
   border-color: #fecdd3;
 }
 
-.btn-acao.danger:hover {
-  background: #f43f5e;
-  color: #ffffff;
+.btn-acao.danger:hover,
+[data-theme="light"] .btn-acao.danger:hover {
+  background: #f43f5e !important;
+  color: #ffffff !important;
+  border-color: #f43f5e;
 }
 
 .btn-acao.contact-whatsapp {
