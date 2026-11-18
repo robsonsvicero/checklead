@@ -252,6 +252,7 @@ export const ModalEditarLead: React.FC<ModalEditarLeadProps> = ({
                 <option value="Instagram">Instagram</option>
                 <option value="indicação">Indicação</option>
                 <option value="site">Site</option>
+                <option value="scraper">Scraper</option>
                 <option value="outro">Outro</option>
               </select>
             </div>

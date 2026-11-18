@@ -205,6 +205,7 @@ export const LeadsPage: React.FC = () => {
               <option value="Instagram">Instagram</option>
               <option value="indicação">Indicação</option>
               <option value="site">Site</option>
+              <option value="scraper">Scraper</option>
               <option value="outro">Outro</option>
             </select>
           </div>

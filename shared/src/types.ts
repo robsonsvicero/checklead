@@ -1,6 +1,6 @@
 export type LeadStatus = 'novo' | 'orcamento_enviado' | 'fechado' | 'perdido' | 'standby';
 
-export type LeadOrigem = 'Instagram' | 'indicação' | 'site' | 'outro';
+export type LeadOrigem = 'Instagram' | 'indicação' | 'site' | 'scraper' | 'outro';
 
 export type InteracaoTipo = 'contato' | 'orcamento' | 'follow_up' | 'nota';
 

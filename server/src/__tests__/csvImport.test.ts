@@ -24,6 +24,7 @@ describe('CSV Template and Import', () => {
     expect(csv).toContain('Contato');
     expect(csv).toContain('Instagram');
     expect(csv).toContain('Google Meu Negócio');
+    expect(csv).toContain('Site');
     expect(csv).toContain('Responsável');
     expect(csv).toContain('Serviço');
     expect(csv).toContain('Valor Estimado (R$)');
@@ -33,9 +34,9 @@ describe('CSV Template and Import', () => {
   });
 
   it('deve importar e exportar os links sociais de cada lead', async () => {
-    const csv = `Nome;WhatsApp;E-mail;Responsável;Instagram;Google Meu Negócio;Serviço;Valor Estimado (R$);Origem;Status;Motivo da Perda
-Carlos Silva;11988887777;carlos@email.com;Mariana;@carlos.silva;https://maps.app.goo.gl/carlos;Reforma de Banheiro;2.500,00;Instagram;novo;
-Ana Costa;;ana@empresa.com;Robson;;;Consultoria;1500;indicação;orcamento_enviado;
+    const csv = `Nome;WhatsApp;E-mail;Responsável;Instagram;Google Meu Negócio;Site;Serviço;Valor Estimado (R$);Origem;Status;Motivo da Perda
+Carlos Silva;11988887777;carlos@email.com;Mariana;@carlos.silva;https://maps.app.goo.gl/carlos;https://carlossilva.com.br;Reforma de Banheiro;2.500,00;Instagram;novo;
+Ana Costa;;ana@empresa.com;Robson;;;;Consultoria;1500;indicação;orcamento_enviado;
 `;
 
     const res = await importarPlanilhaCsv(csv, 'local-owner');
@@ -51,6 +52,7 @@ Ana Costa;;ana@empresa.com;Robson;;;Consultoria;1500;indicação;orcamento_envia
     expect(leads[0].responsavel).toBe('Mariana');
     expect(leads[0].instagram).toBe('carlos.silva');
     expect(leads[0].google_meu_negocio).toBe('https://maps.app.goo.gl/carlos');
+    expect(leads[0].site).toBe('https://carlossilva.com.br');
     expect(leads[0].valor_estimado).toBe(250000); // R$ 2.500,00 em centavos
     expect(leads[0].origem).toBe('Instagram');
     expect(leads[0].status).toBe('novo');
@@ -61,14 +63,17 @@ Ana Costa;;ana@empresa.com;Robson;;;Consultoria;1500;indicação;orcamento_envia
     expect(leads[1].responsavel).toBe('Robson');
     expect(leads[1].instagram).toBeNull();
     expect(leads[1].google_meu_negocio).toBeNull();
+    expect(leads[1].site).toBeNull();
     expect(leads[1].valor_estimado).toBe(150000);
     expect(leads[1].status).toBe('orcamento_enviado');
 
     const exportacao = await gerarExportacaoCsv('local-owner');
     expect(exportacao).toContain('Instagram');
     expect(exportacao).toContain('Google Meu Negócio');
+    expect(exportacao).toContain('Site');
     expect(exportacao).toContain('@carlos.silva');
     expect(exportacao).toContain('https://maps.app.goo.gl/carlos');
+    expect(exportacao).toContain('https://carlossilva.com.br');
   });
 
   it('deve ignorar linhas sem nome ou contato', async () => {

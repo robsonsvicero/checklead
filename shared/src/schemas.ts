@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const LeadOrigemEnum = z.enum(['Instagram', 'indicação', 'site', 'outro']);
+export const LeadOrigemEnum = z.enum(['Instagram', 'indicação', 'site', 'scraper', 'outro']);
 export const LeadStatusEnum = z.enum(['novo', 'orcamento_enviado', 'fechado', 'perdido', 'standby']);
 export const InteracaoTipoEnum = z.enum(['contato', 'orcamento', 'follow_up', 'nota']);
 const InstagramSchema = z.string()

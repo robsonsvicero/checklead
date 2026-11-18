@@ -12,6 +12,7 @@ export function gerarModeloCsvVazio(): string {
     'Contato',
     'Instagram',
     'Google Meu Negócio',
+    'Site',
     'Responsável',
     'Serviço',
     'Valor Estimado (R$)',
@@ -46,6 +47,7 @@ export async function importarPlanilhaCsv(conteudoCsv: string, userId: string): 
   const idxEmail = cabecalho.findIndex(c => c.includes('mail'));
   const idxInstagram = cabecalho.findIndex(c => c.includes('instagram'));
   const idxGoogleMeuNegocio = cabecalho.findIndex(c => c.includes('google') && c.includes('negocio'));
+  const idxSite = cabecalho.findIndex(c => c === 'site' || c.includes('website') || c.includes('pagina') || c.includes('url') || (c.includes('site') && !c.includes('origem') && !c.includes('canal')));
   const idxContatoGenerico = cabecalho.findIndex(c => c.includes('contato'));
   const idxResponsavel = cabecalho.findIndex(c => c.includes('responsavel') || c.includes('responsável') || c.includes('atendente') || c.includes('dono'));
   const idxServico = cabecalho.findIndex(c => c.includes('servico') || c.includes('serviço'));
@@ -73,6 +75,9 @@ export async function importarPlanilhaCsv(conteudoCsv: string, userId: string): 
     const googleMeuNegocio = idxGoogleMeuNegocio !== -1 && col[idxGoogleMeuNegocio]?.trim()
       ? col[idxGoogleMeuNegocio].trim()
       : null;
+    const site = idxSite !== -1 && col[idxSite]?.trim()
+      ? col[idxSite].trim()
+      : null;
     const contatoGen = idxContatoGenerico !== -1 && col[idxContatoGenerico]?.trim() ? col[idxContatoGenerico].trim() : null;
     const responsavel = idxResponsavel !== -1 && col[idxResponsavel]?.trim() ? col[idxResponsavel].trim() : null;
 
@@ -92,7 +97,8 @@ export async function importarPlanilhaCsv(conteudoCsv: string, userId: string): 
       const o = col[idxOrigem].trim().toLowerCase();
       if (o.includes('insta')) origem = 'Instagram';
       else if (o.includes('indica') || o.includes('indicação')) origem = 'indicação';
-      else if (o.includes('site') || o.includes('scraper')  || o.includes('web')) origem = 'site';
+      else if (o.includes('site') || o.includes('web')) origem = 'site';
+      else if (o.includes('scraper')) origem = 'scraper';
     }
 
     let status = 'novo';
@@ -116,7 +122,7 @@ export async function importarPlanilhaCsv(conteudoCsv: string, userId: string): 
       email,
       instagram,
       google_meu_negocio: googleMeuNegocio,
-      site: null,
+      site,
       responsavel,
       servico,
       origem,
@@ -295,6 +301,7 @@ export async function gerarExportacaoCsv(userId: string): Promise<string> {
     'E-mail',
     'Instagram',
     'Google Meu Negócio',
+    'Site',
     'Responsável',
     'Contato',
     'Serviço',
@@ -320,6 +327,7 @@ export async function gerarExportacaoCsv(userId: string): Promise<string> {
       escapeCsv(lead.email || ''),
       escapeCsv(lead.instagram ? `@${lead.instagram.replace(/^@/, '')}` : ''),
       escapeCsv(lead.google_meu_negocio || ''),
+      escapeCsv(lead.site || ''),
       escapeCsv(lead.responsavel || ''),
       escapeCsv(lead.contato),
       escapeCsv(lead.servico),
