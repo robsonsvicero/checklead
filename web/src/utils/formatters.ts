@@ -4,7 +4,8 @@ const rotulosStatus: Record<LeadStatus, string> = {
   novo: 'Novo',
   orcamento_enviado: 'Orçado',
   fechado: 'Fechado',
-  perdido: 'Perdido'
+  perdido: 'Perdido',
+  standby: 'Standby'
 };
 
 export function formatarStatusLead(status: LeadStatus): string {

@@ -13,7 +13,7 @@ interface CardAlertaProps {
   onExcluir?: (leadId: number, leadNome: string) => void;
 }
 
-export type TipoAcaoRapida = 'contato' | 'orcamento' | 'fechou';
+export type TipoAcaoRapida = 'contato' | 'orcamento' | 'fechou' | 'standby';
 
 export const CardAlerta: React.FC<CardAlertaProps> = ({
   alerta,
@@ -154,6 +154,16 @@ export const CardAlerta: React.FC<CardAlertaProps> = ({
                   title="Marcar como perdido"
                 >
                   ❌ Perdeu
+                </button>
+
+                <button
+                  className="btn-acao"
+                  onClick={() => onAcaoRapida(alerta.lead_id, 'standby')}
+                  disabled={acaoRapidaDesabilitada}
+                  aria-busy={tipoAcaoEmAndamento === 'standby'}
+                  title="Pausar prazos deste lead e retirar do Radar"
+                >
+                  {tipoAcaoEmAndamento === 'standby' ? 'Pausando...' : '⏸️ Standby'}
                 </button>
               </>
             )}

@@ -8,7 +8,7 @@ import { ModalEditarLead } from '../components/ModalEditarLead.js';
 import { FeedbackAcaoRapida } from '../components/FeedbackAcaoRapida.js';
 import { LoadingState, EmptyState, ErrorState } from '../components/FeedbackStates.js';
 
-type TipoAcaoRapida = 'contato' | 'orcamento' | 'fechou';
+type TipoAcaoRapida = 'contato' | 'orcamento' | 'fechou' | 'standby' | 'reativar';
 
 export const LeadsPage: React.FC = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -187,6 +187,7 @@ export const LeadsPage: React.FC = () => {
               <option value="todos">Todos os status</option>
               <option value="novo">Novos</option>
               <option value="orcamento_enviado">Orçamentos</option>
+              <option value="standby">Standby</option>
               <option value="fechado">Fechados</option>
               <option value="perdido">Perdidos</option>
             </select>

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const LeadOrigemEnum = z.enum(['Instagram', 'indicação', 'site', 'outro']);
-export const LeadStatusEnum = z.enum(['novo', 'orcamento_enviado', 'fechado', 'perdido']);
+export const LeadStatusEnum = z.enum(['novo', 'orcamento_enviado', 'fechado', 'perdido', 'standby']);
 export const InteracaoTipoEnum = z.enum(['contato', 'orcamento', 'follow_up', 'nota']);
 const InstagramSchema = z.string()
   .trim()
@@ -77,6 +77,14 @@ export const AcaoLeadSchema = z.discriminatedUnion('tipo', [
   z.object({
     tipo: z.literal('nota'),
     texto: z.string().trim().min(1, 'O texto da nota não pode ser vazio')
+  }),
+  z.object({
+    tipo: z.literal('standby'),
+    texto: z.string().trim().optional()
+  }),
+  z.object({
+    tipo: z.literal('reativar'),
+    texto: z.string().trim().optional()
   })
 ]);
 

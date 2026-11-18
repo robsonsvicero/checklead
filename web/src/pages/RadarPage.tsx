@@ -180,7 +180,8 @@ export const RadarPage: React.FC<RadarPageProps> = ({ onAtualizarAlertasTotal })
     const nomeAcao = {
       contato: 'o contato',
       orcamento: 'o envio do orçamento',
-      fechou: 'o fechamento'
+      fechou: 'o fechamento',
+      standby: 'a pausa em standby'
     }[tipoAcao];
 
     try {

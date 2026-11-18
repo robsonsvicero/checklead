@@ -252,6 +252,7 @@ export const ModalEditarLead: React.FC<ModalEditarLeadProps> = ({
             >
               <option value="novo">Novo</option>
               <option value="orcamento_enviado">Orçamento Enviado</option>
+              <option value="standby">Standby (Em espera)</option>
               <option value="fechado">Fechado (Ganho)</option>
               <option value="perdido">Perdido</option>
             </select>

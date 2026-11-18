@@ -149,6 +149,21 @@ describe('radarService - calcularAlertas', () => {
 
     expect(alertas).toEqual([]);
   });
+
+  it('nunca deve alertar leads com status standby, pausando a contagem de prazos no radar', () => {
+    const agora = new Date('2026-11-30T10:00:00Z'); // 20 dias depois
+    const leadStandby = criarLead({
+      id: 1,
+      status: 'standby',
+      criado_em: new Date('2026-11-01T10:00:00Z').toISOString(),
+      orcamento_enviado_em: new Date('2026-11-05T10:00:00Z').toISOString()
+    });
+
+    const interacoes = new Map<number, Interacao[]>();
+    const alertas = calcularAlertas([leadStandby], interacoes, configPadrao, agora);
+
+    expect(alertas).toEqual([]);
+  });
 });
 
 describe('radarService - calcularMetricas', () => {
@@ -201,14 +216,20 @@ describe('radarService - calcularMetricas', () => {
         status: 'novo',
         valor_estimado: 25000,
         orcamento_enviado_em: null
+      }),
+      criarLead({
+        id: 4,
+        status: 'standby',
+        valor_estimado: 30000,
+        orcamento_enviado_em: null
       })
     ];
 
     const metricas = calcularMetricas(leads);
     // Tempo médio: (2 + 4) / 2 = 3.0h
     expect(metricas.tempo_medio_orcamento_horas).toBe(3);
-    // Valor em aberto: 100000 + 50000 + 25000 = 175000
-    expect(metricas.valor_em_aberto).toBe(175000);
+    // Valor em aberto: 100000 + 50000 + 25000 + 30000 = 205000
+    expect(metricas.valor_em_aberto).toBe(205000);
   });
 
   it('deve calcular valor perdido apenas no mês corrente', () => {

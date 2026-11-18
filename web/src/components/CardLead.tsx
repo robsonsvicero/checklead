@@ -4,10 +4,12 @@ import { Lead } from '@radar/shared';
 import { formatarMoeda, formatarDataHora, formatarStatusLead, gerarLinkContato } from '../utils/formatters.js';
 import { gerarLinksSociaisLead } from '../utils/socialLinks.js';
 
+export type TipoAcaoRapida = 'contato' | 'orcamento' | 'fechou' | 'standby' | 'reativar';
+
 interface CardLeadProps {
   lead: Lead;
-  onAcaoRapida: (leadId: number, tipoAcao: 'contato' | 'orcamento' | 'fechou') => void;
-  acaoEmAndamento: { leadId: number; tipoAcao: 'contato' | 'orcamento' | 'fechou' } | null;
+  onAcaoRapida: (leadId: number, tipoAcao: TipoAcaoRapida) => void;
+  acaoEmAndamento: { leadId: number; tipoAcao: TipoAcaoRapida } | null;
   onAbrirModal: (tipo: 'perdeu' | 'nota', leadId: number, leadNome: string) => void;
   onEditar?: (lead: Lead) => void;
   onExcluir?: (leadId: number, leadNome: string) => void;
@@ -179,6 +181,28 @@ export const CardLead: React.FC<CardLeadProps> = ({
                 >
                   ❌ Perdeu
                 </button>
+
+                {lead.status === 'standby' ? (
+                  <button
+                    className="btn-acao"
+                    onClick={() => onAcaoRapida(lead.id, 'reativar')}
+                    disabled={acaoEmAndamento !== null}
+                    aria-busy={acaoEmAndamento?.leadId === lead.id && acaoEmAndamento.tipoAcao === 'reativar'}
+                    title="Reativar lead e voltar a monitorar prazos"
+                  >
+                    {acaoEmAndamento?.leadId === lead.id && acaoEmAndamento.tipoAcao === 'reativar' ? 'Reativando...' : '▶️ Reativar'}
+                  </button>
+                ) : (
+                  <button
+                    className="btn-acao"
+                    onClick={() => onAcaoRapida(lead.id, 'standby')}
+                    disabled={acaoEmAndamento !== null}
+                    aria-busy={acaoEmAndamento?.leadId === lead.id && acaoEmAndamento.tipoAcao === 'standby'}
+                    title="Pausar prazos deste lead e não monitorar no radar"
+                  >
+                    {acaoEmAndamento?.leadId === lead.id && acaoEmAndamento.tipoAcao === 'standby' ? 'Pausando...' : '⏸️ Standby'}
+                  </button>
+                )}
               </>
             )}
 

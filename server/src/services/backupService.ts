@@ -101,6 +101,7 @@ export async function importarPlanilhaCsv(conteudoCsv: string, userId: string): 
       if (s.includes('orcamento') || s.includes('orçado')) status = 'orcamento_enviado';
       else if (s.includes('fecha') || s.includes('ganho')) status = 'fechado';
       else if (s.includes('perde') || s.includes('perdido')) status = 'perdido';
+      else if (s.includes('standby') || s.includes('espera') || s.includes('pausa')) status = 'standby';
     }
 
     const motivoPerda = idxMotivo !== -1 && col[idxMotivo]?.trim() ? col[idxMotivo].trim() : (status === 'perdido' ? 'Não informado' : null);

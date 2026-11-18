@@ -417,6 +417,36 @@ export async function executarAcaoLead(id: number, acao: AcaoLeadDTO, userId: st
       `).run(id, acao.texto, agora);
       break;
     }
+
+    case 'standby': {
+      db.prepare(`
+        UPDATE leads 
+        SET status = 'standby'
+        WHERE id = ?
+      `).run(id);
+
+      db.prepare(`
+        INSERT INTO interacoes (lead_id, tipo, texto, criado_em)
+        VALUES (?, 'nota', ?, ?)
+      `).run(id, acao.texto || 'Lead colocado em Standby. Prazos pausados no Radar.', agora);
+      break;
+    }
+
+    case 'reativar': {
+      const statusReativado = lead.orcamento_enviado_em ? 'orcamento_enviado' : 'novo';
+      db.prepare(`
+        UPDATE leads 
+        SET status = ?,
+            ultimo_contato_em = ?
+        WHERE id = ?
+      `).run(statusReativado, agora, id);
+
+      db.prepare(`
+        INSERT INTO interacoes (lead_id, tipo, texto, criado_em)
+        VALUES (?, 'nota', ?, ?)
+      `).run(id, acao.texto || 'Lead reativado. Prazos voltam a ser monitorados no Radar.', agora);
+      break;
+    }
   }
 
   const leadAtualizado = await obterLeadPorId(id, userId);

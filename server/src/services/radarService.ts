@@ -20,8 +20,8 @@ export function calcularAlertas(
   const alertas: AlertaLead[] = [];
 
   for (const lead of leads) {
-    // Alertas são apenas para leads em aberto
-    if (lead.status === 'fechado' || lead.status === 'perdido') {
+    // Alertas são apenas para leads em aberto que não estejam em standby
+    if (lead.status === 'fechado' || lead.status === 'perdido' || lead.status === 'standby') {
       continue;
     }
 
@@ -171,7 +171,7 @@ export function calcularMetricas(leads: Lead[], agora: Date = new Date()): Metri
       if (dataPerda.getFullYear() === anoAtual && dataPerda.getMonth() === mesAtual) {
         valorPerdidoMes += lead.valor_estimado;
       }
-    } else if (lead.status === 'novo' || lead.status === 'orcamento_enviado') {
+    } else if (lead.status === 'novo' || lead.status === 'orcamento_enviado' || lead.status === 'standby') {
       valorEmAberto += lead.valor_estimado;
     }
 

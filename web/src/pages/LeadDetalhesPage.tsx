@@ -9,7 +9,7 @@ import { ModalAcao } from '../components/ModalAcao.js';
 import { ModalEditarLead } from '../components/ModalEditarLead.js';
 import { FeedbackAcaoRapida } from '../components/FeedbackAcaoRapida.js';
 
-type TipoAcaoRapida = 'contato' | 'orcamento' | 'fechou';
+type TipoAcaoRapida = 'contato' | 'orcamento' | 'fechou' | 'standby' | 'reativar';
 
 export const LeadDetalhesPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -278,6 +278,27 @@ export const LeadDetalhesPage: React.FC = () => {
               <button className="btn-acao danger" onClick={() => setModalAcao({ aberto: true, tipo: 'perdeu' })} disabled={acaoRapidaEmAndamento}>
                 ❌ Perdeu
               </button>
+              {lead.status === 'standby' ? (
+                <button
+                  className="btn-acao"
+                  onClick={() => handleAcaoRapida('reativar')}
+                  disabled={acaoRapidaEmAndamento}
+                  aria-busy={acaoEmAndamento === 'reativar'}
+                  title="Reativar lead e voltar a monitorar prazos"
+                >
+                  {acaoEmAndamento === 'reativar' ? 'Reativando...' : '▶️ Reativar'}
+                </button>
+              ) : (
+                <button
+                  className="btn-acao"
+                  onClick={() => handleAcaoRapida('standby')}
+                  disabled={acaoRapidaEmAndamento}
+                  aria-busy={acaoEmAndamento === 'standby'}
+                  title="Pausar prazos deste lead e não monitorar no radar"
+                >
+                  {acaoEmAndamento === 'standby' ? 'Pausando...' : '⏸️ Standby'}
+                </button>
+              )}
             </>
           )}
 
