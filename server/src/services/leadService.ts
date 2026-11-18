@@ -164,14 +164,15 @@ export async function criarLead(dados: CriarLeadDTO, userId: string): Promise<Le
   const email = dados.email?.trim() || null;
   const instagram = dados.instagram?.trim().replace(/^@/, '') || null;
   const googleMeuNegocio = dados.google_meu_negocio?.trim() || null;
+  const site = dados.site?.trim() || null;
   const contato = dados.contato?.trim() || whatsapp || email || 'Sem contato';
   const responsavel = dados.responsavel?.trim() || null;
 
   const res = db.prepare(`
     INSERT INTO leads (
-      nome, contato, whatsapp, email, instagram, google_meu_negocio, responsavel, servico, origem, valor_estimado, status, criado_em,
+      nome, contato, whatsapp, email, instagram, google_meu_negocio, site, responsavel, servico, origem, valor_estimado, status, criado_em,
       ultimo_contato_em, orcamento_enviado_em, fechado_em, motivo_perda, proxima_acao_em
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'novo', ?, NULL, NULL, NULL, NULL, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'novo', ?, NULL, NULL, NULL, NULL, ?)
   `).run(
     dados.nome.trim(),
     contato,
@@ -179,6 +180,7 @@ export async function criarLead(dados: CriarLeadDTO, userId: string): Promise<Le
     email,
     instagram,
     googleMeuNegocio,
+    site,
     responsavel,
     dados.servico.trim(),
     dados.origem,
@@ -257,6 +259,10 @@ export async function atualizarLead(id: number, dados: AtualizarLeadDTO, userId:
   if (dados.google_meu_negocio !== undefined) {
     updates.push('google_meu_negocio = ?');
     params.push(dados.google_meu_negocio ? dados.google_meu_negocio.trim() : null);
+  }
+  if (dados.site !== undefined) {
+    updates.push('site = ?');
+    params.push(dados.site ? dados.site.trim() : null);
   }
   if (dados.responsavel !== undefined) {
     updates.push('responsavel = ?');

@@ -15,6 +15,7 @@ export const ModalNovoLead: React.FC<ModalNovoLeadProps> = ({ aberto, onFechar, 
   const [email, setEmail] = useState('');
   const [instagram, setInstagram] = useState('');
   const [googleMeuNegocio, setGoogleMeuNegocio] = useState('');
+  const [site, setSite] = useState('');
   const [responsavel, setResponsavel] = useState('');
   const [servico, setServico] = useState('');
   const [valorTexto, setValorTexto] = useState('');
@@ -53,6 +54,7 @@ export const ModalNovoLead: React.FC<ModalNovoLeadProps> = ({ aberto, onFechar, 
           email: emailLimpo || null,
           instagram: instagram.trim().replace(/^@/, '') || null,
           google_meu_negocio: googleMeuNegocio.trim() || null,
+          site: site.trim() || null,
           contato: whatsLimpo || emailLimpo,
           responsavel: responsavel.trim() || null,
           servico: servico.trim(),
@@ -67,6 +69,7 @@ export const ModalNovoLead: React.FC<ModalNovoLeadProps> = ({ aberto, onFechar, 
       setEmail('');
       setInstagram('');
       setGoogleMeuNegocio('');
+      setSite('');
       setResponsavel('');
       setServico('');
       setValorTexto('');
@@ -176,16 +179,28 @@ export const ModalNovoLead: React.FC<ModalNovoLeadProps> = ({ aberto, onFechar, 
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="novo-lead-google-meu-negocio">Google Meu Negócio</label>
+              <label className="form-label" htmlFor="novo-lead-site">Site (opcional)</label>
               <input
-                id="novo-lead-google-meu-negocio"
-                type="url"
+                id="novo-lead-site"
+                type="text"
                 className="form-input"
-                placeholder="https://maps.app.goo.gl/..."
-                value={googleMeuNegocio}
-                onChange={e => setGoogleMeuNegocio(e.target.value)}
+                placeholder="Ex: www.cliente.com.br"
+                value={site}
+                onChange={e => setSite(e.target.value)}
               />
             </div>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label" htmlFor="novo-lead-google-meu-negocio">Google Meu Negócio</label>
+            <input
+              id="novo-lead-google-meu-negocio"
+              type="url"
+              className="form-input"
+              placeholder="https://maps.app.goo.gl/..."
+              value={googleMeuNegocio}
+              onChange={e => setGoogleMeuNegocio(e.target.value)}
+            />
           </div>
 
           <div className="form-group">
@@ -222,9 +237,10 @@ export const ModalNovoLead: React.FC<ModalNovoLeadProps> = ({ aberto, onFechar, 
                 value={origem}
                 onChange={e => setOrigem(e.target.value as LeadOrigem)}
               >
-                <option value="Instagram">Instagram</option>
+                <option value="instagram">Instagram</option>
                 <option value="indicação">Indicação</option>
                 <option value="site">Site</option>
+                <option value="scraper">Scraper</option>
                 <option value="outro">Outro</option>
               </select>
             </div>

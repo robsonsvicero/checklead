@@ -12,6 +12,7 @@ export interface Lead {
   email: string | null;
   instagram: string | null;
   google_meu_negocio: string | null;
+  site: string | null;
   responsavel: string | null;
   servico: string;
   origem: LeadOrigem;

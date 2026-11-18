@@ -24,6 +24,7 @@ export function runMigrations(db: DatabaseSync) {
       email TEXT,
       instagram TEXT,
       google_meu_negocio TEXT,
+      site TEXT,
       responsavel TEXT,
       servico TEXT NOT NULL,
       origem TEXT NOT NULL,
@@ -72,6 +73,9 @@ export function runMigrations(db: DatabaseSync) {
   }
   if (!nomesColunas.includes('google_meu_negocio')) {
     db.exec('ALTER TABLE leads ADD COLUMN google_meu_negocio TEXT;');
+  }
+  if (!nomesColunas.includes('site')) {
+    db.exec('ALTER TABLE leads ADD COLUMN site TEXT;');
   }
 
   // Garante que a linha de configuração padrão exista

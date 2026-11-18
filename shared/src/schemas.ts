@@ -14,6 +14,27 @@ const GoogleMeuNegocioSchema = z.string()
   .refine(value => /^https?:\/\//i.test(value), 'O link deve começar com http:// ou https://')
   .nullable()
   .optional();
+const SiteSchema = z.string()
+  .trim()
+  .nullable()
+  .optional()
+  .transform(value => {
+    if (!value || value.trim() === '') return null;
+    const v = value.trim();
+    if (!/^https?:\/\//i.test(v)) {
+      return `https://${v}`;
+    }
+    return v;
+  })
+  .refine(value => {
+    if (!value) return true;
+    try {
+      new URL(value);
+      return true;
+    } catch {
+      return false;
+    }
+  }, 'Informe um link de site válido');
 
 export const CriarLeadSchema = z.object({
   nome: z.string().trim().min(2, 'O nome deve ter pelo menos 2 caracteres'),
@@ -21,6 +42,7 @@ export const CriarLeadSchema = z.object({
   email: z.string().trim().nullable().optional(),
   instagram: InstagramSchema,
   google_meu_negocio: GoogleMeuNegocioSchema,
+  site: SiteSchema,
   contato: z.string().trim().optional(),
   responsavel: z.string().trim().nullable().optional(),
   servico: z.string().trim().min(2, 'Informe o serviço desejado'),
@@ -40,6 +62,7 @@ export const AtualizarLeadSchema = z.object({
   email: z.string().trim().nullable().optional(),
   instagram: InstagramSchema,
   google_meu_negocio: GoogleMeuNegocioSchema,
+  site: SiteSchema,
   contato: z.string().trim().optional(),
   responsavel: z.string().trim().nullable().optional(),
   servico: z.string().trim().min(2).optional(),

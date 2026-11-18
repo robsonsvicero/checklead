@@ -17,7 +17,7 @@ describe('lead social links', () => {
     closeDb();
   });
 
-  it('saves and updates Instagram handles and Google Business links per lead', async () => {
+  it('saves and updates Instagram handles, Google Business links, and site per lead', async () => {
     const dados = CriarLeadSchema.parse({
       nome: 'Loja Exemplo',
       whatsapp: '11999990000',
@@ -25,33 +25,39 @@ describe('lead social links', () => {
       origem: 'Instagram',
       valor_estimado: 0,
       instagram: '@loja.exemplo',
-      google_meu_negocio: 'https://maps.app.goo.gl/example'
+      google_meu_negocio: 'https://maps.app.goo.gl/example',
+      site: 'lojaexemplo.com.br'
     });
 
     const lead = await criarLead(dados, 'local-owner');
 
     expect(lead.instagram).toBe('loja.exemplo');
     expect(lead.google_meu_negocio).toBe('https://maps.app.goo.gl/example');
+    expect(lead.site).toBe('https://lojaexemplo.com.br');
 
     await atualizarLead(lead.id, AtualizarLeadSchema.parse({
       instagram: '@loja.atualizada',
-      google_meu_negocio: 'https://maps.app.goo.gl/updated'
+      google_meu_negocio: 'https://maps.app.goo.gl/updated',
+      site: 'https://novosite.com.br'
     }), 'local-owner');
 
-    const atualizado = getDb().prepare('SELECT instagram, google_meu_negocio FROM leads WHERE id = ?').get(lead.id) as {
+    const atualizado = getDb().prepare('SELECT instagram, google_meu_negocio, site FROM leads WHERE id = ?').get(lead.id) as {
       instagram: string;
       google_meu_negocio: string;
+      site: string;
     };
     expect(atualizado).toEqual({
       instagram: 'loja.atualizada',
-      google_meu_negocio: 'https://maps.app.goo.gl/updated'
+      google_meu_negocio: 'https://maps.app.goo.gl/updated',
+      site: 'https://novosite.com.br'
     });
 
     const backup = await gerarExportacaoJson('local-owner');
     await importarBackupJson(backup, 'local-owner');
-    const leadRestaurado = getDb().prepare('SELECT instagram, google_meu_negocio FROM leads WHERE id = ?').get(lead.id) as {
+    const leadRestaurado = getDb().prepare('SELECT instagram, google_meu_negocio, site FROM leads WHERE id = ?').get(lead.id) as {
       instagram: string;
       google_meu_negocio: string;
+      site: string;
     };
     expect(leadRestaurado).toEqual(atualizado);
   });

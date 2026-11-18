@@ -21,6 +21,7 @@ export const ModalEditarLead: React.FC<ModalEditarLeadProps> = ({
   const [email, setEmail] = useState('');
   const [instagram, setInstagram] = useState('');
   const [googleMeuNegocio, setGoogleMeuNegocio] = useState('');
+  const [site, setSite] = useState('');
   const [responsavel, setResponsavel] = useState('');
   const [servico, setServico] = useState('');
   const [valorTexto, setValorTexto] = useState('');
@@ -37,6 +38,7 @@ export const ModalEditarLead: React.FC<ModalEditarLeadProps> = ({
       setEmail(lead.email || (lead.contato.includes('@') ? lead.contato : ''));
       setInstagram(lead.instagram ? `@${lead.instagram.replace(/^@/, '')}` : '');
       setGoogleMeuNegocio(lead.google_meu_negocio || '');
+      setSite(lead.site || '');
       setResponsavel(lead.responsavel || '');
       setServico(lead.servico);
       setValorTexto((lead.valor_estimado / 100).toFixed(2).replace('.', ','));
@@ -82,6 +84,7 @@ export const ModalEditarLead: React.FC<ModalEditarLeadProps> = ({
           email: emailLimpo || null,
           instagram: instagram.trim().replace(/^@/, '') || null,
           google_meu_negocio: googleMeuNegocio.trim() || null,
+          site: site.trim() || null,
           contato: whatsLimpo || emailLimpo,
           responsavel: responsavel.trim() || null,
           servico: servico.trim(),
@@ -190,16 +193,28 @@ export const ModalEditarLead: React.FC<ModalEditarLeadProps> = ({
             </div>
 
             <div className="form-group">
-              <label className="form-label" htmlFor="editar-lead-google-meu-negocio">Google Meu Negócio</label>
+              <label className="form-label" htmlFor="editar-lead-site">Site (opcional)</label>
               <input
-                id="editar-lead-google-meu-negocio"
-                type="url"
+                id="editar-lead-site"
+                type="text"
                 className="form-input"
-                placeholder="https://maps.app.goo.gl/..."
-                value={googleMeuNegocio}
-                onChange={e => setGoogleMeuNegocio(e.target.value)}
+                placeholder="Ex: www.cliente.com.br"
+                value={site}
+                onChange={e => setSite(e.target.value)}
               />
             </div>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label" htmlFor="editar-lead-google-meu-negocio">Google Meu Negócio</label>
+            <input
+              id="editar-lead-google-meu-negocio"
+              type="url"
+              className="form-input"
+              placeholder="https://maps.app.goo.gl/..."
+              value={googleMeuNegocio}
+              onChange={e => setGoogleMeuNegocio(e.target.value)}
+            />
           </div>
 
           <div className="form-group">

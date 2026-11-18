@@ -92,7 +92,7 @@ export async function importarPlanilhaCsv(conteudoCsv: string, userId: string): 
       const o = col[idxOrigem].trim().toLowerCase();
       if (o.includes('insta')) origem = 'Instagram';
       else if (o.includes('indica') || o.includes('indicação')) origem = 'indicação';
-      else if (o.includes('site') || o.includes('web')) origem = 'site';
+      else if (o.includes('site') || o.includes('scraper')  || o.includes('web')) origem = 'site';
     }
 
     let status = 'novo';
@@ -116,6 +116,7 @@ export async function importarPlanilhaCsv(conteudoCsv: string, userId: string): 
       email,
       instagram,
       google_meu_negocio: googleMeuNegocio,
+      site: null,
       responsavel,
       servico,
       origem,
@@ -145,9 +146,9 @@ export async function importarPlanilhaCsv(conteudoCsv: string, userId: string): 
   try {
     const stmtLead = db.prepare(`
       INSERT INTO leads (
-        nome, contato, whatsapp, email, instagram, google_meu_negocio, responsavel, servico, origem, valor_estimado, status, criado_em,
+        nome, contato, whatsapp, email, instagram, google_meu_negocio, site, responsavel, servico, origem, valor_estimado, status, criado_em,
         ultimo_contato_em, orcamento_enviado_em, fechado_em, motivo_perda, proxima_acao_em
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     const stmtIt = db.prepare(`
       INSERT INTO interacoes (lead_id, tipo, texto, criado_em)
@@ -162,6 +163,7 @@ export async function importarPlanilhaCsv(conteudoCsv: string, userId: string): 
         lead.email,
         lead.instagram,
         lead.google_meu_negocio,
+        lead.site || null,
         lead.responsavel,
         lead.servico,
         lead.origem,
@@ -394,9 +396,9 @@ export async function importarBackupJson(conteudo: unknown, userId: string): Pro
     // Insere Leads
     const stmtLead = db.prepare(`
       INSERT INTO leads (
-        id, nome, contato, whatsapp, email, instagram, google_meu_negocio, responsavel, servico, origem, valor_estimado, status,
+        id, nome, contato, whatsapp, email, instagram, google_meu_negocio, site, responsavel, servico, origem, valor_estimado, status,
         criado_em, ultimo_contato_em, orcamento_enviado_em, fechado_em, motivo_perda, proxima_acao_em
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     for (const lead of data.leads) {
@@ -408,6 +410,7 @@ export async function importarBackupJson(conteudo: unknown, userId: string): Pro
         lead.email || null,
         lead.instagram?.replace(/^@/, '') || null,
         lead.google_meu_negocio || null,
+        lead.site || null,
         lead.responsavel || null,
         lead.servico,
         lead.origem,

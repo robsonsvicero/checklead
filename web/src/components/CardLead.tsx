@@ -43,9 +43,10 @@ export const CardLead: React.FC<CardLeadProps> = ({
   const whatsLink = lead.whatsapp ? gerarLinkContato(lead.whatsapp) : null;
   const emailLink = lead.email ? gerarLinkContato(lead.email) : null;
   const contatoFallback = !whatsLink && !emailLink ? gerarLinkContato(lead.contato) : null;
-  const { instagramHandle, instagramUrl, googleMeuNegocioUrl } = gerarLinksSociaisLead(
+  const { instagramHandle, instagramUrl, googleMeuNegocioUrl, siteUrl } = gerarLinksSociaisLead(
     lead.instagram,
-    lead.google_meu_negocio
+    lead.google_meu_negocio,
+    lead.site
   );
 
   return (
@@ -59,6 +60,11 @@ export const CardLead: React.FC<CardLeadProps> = ({
             {instagramUrl && (
               <a href={instagramUrl} target="_blank" rel="noopener noreferrer" className="lead-social-link">
                 @{instagramHandle}
+              </a>
+            )}
+            {siteUrl && (
+              <a href={siteUrl} target="_blank" rel="noopener noreferrer" className="lead-social-link">
+                🌐 Site
               </a>
             )}
             {googleMeuNegocioUrl && (

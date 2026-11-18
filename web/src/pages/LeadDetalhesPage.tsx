@@ -133,9 +133,10 @@ export const LeadDetalhesPage: React.FC = () => {
   }
 
   const contatoInfo = gerarLinkContato(lead.contato);
-  const { instagramHandle, instagramUrl, googleMeuNegocioUrl } = gerarLinksSociaisLead(
+  const { instagramHandle, instagramUrl, googleMeuNegocioUrl, siteUrl } = gerarLinksSociaisLead(
     lead.instagram,
-    lead.google_meu_negocio
+    lead.google_meu_negocio,
+    lead.site
   );
 
   return (
@@ -175,6 +176,11 @@ export const LeadDetalhesPage: React.FC = () => {
               {instagramUrl && (
                 <a href={instagramUrl} target="_blank" rel="noopener noreferrer" className="lead-social-link">
                   @{instagramHandle}
+                </a>
+              )}
+              {siteUrl && (
+                <a href={siteUrl} target="_blank" rel="noopener noreferrer" className="lead-social-link">
+                  🌐 Site
                 </a>
               )}
               {googleMeuNegocioUrl && (
