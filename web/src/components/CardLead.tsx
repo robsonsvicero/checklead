@@ -21,6 +21,23 @@ export const CardLead: React.FC<CardLeadProps> = ({
   onEditar,
   onExcluir
 }) => {
+  const [menuAberto, setMenuAberto] = React.useState(false);
+  const detailsRef = React.useRef<HTMLDetailsElement>(null);
+
+  React.useEffect(() => {
+    if (!menuAberto) return;
+    const handleDocumentClick = (e: MouseEvent) => {
+      if (detailsRef.current && !detailsRef.current.contains(e.target as Node)) {
+        detailsRef.current.removeAttribute('open');
+        setMenuAberto(false);
+      }
+    };
+    document.addEventListener('click', handleDocumentClick);
+    return () => {
+      document.removeEventListener('click', handleDocumentClick);
+    };
+  }, [menuAberto]);
+
   const whatsLink = lead.whatsapp ? gerarLinkContato(lead.whatsapp) : null;
   const emailLink = lead.email ? gerarLinkContato(lead.email) : null;
   const contatoFallback = !whatsLink && !emailLink ? gerarLinkContato(lead.contato) : null;
@@ -30,7 +47,7 @@ export const CardLead: React.FC<CardLeadProps> = ({
   );
 
   return (
-    <div className="lead-card">
+    <div className={`lead-card ${menuAberto ? 'menu-aberto' : ''}`}>
       <div className="lead-header">
         <div className="lead-header-main">
           <div className="lead-title-row">
@@ -124,7 +141,11 @@ export const CardLead: React.FC<CardLeadProps> = ({
           </button>
         )}
 
-        <details className="acoes-secundarias">
+        <details
+          ref={detailsRef}
+          className="acoes-secundarias"
+          onToggle={e => setMenuAberto((e.target as HTMLDetailsElement).open)}
+        >
           <summary className="btn-acao">Mais ações</summary>
           <div className="acoes-menu" onClick={event => event.currentTarget.parentElement?.removeAttribute('open')}>
             {lead.status === 'novo' && (

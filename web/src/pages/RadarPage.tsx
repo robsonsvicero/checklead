@@ -4,6 +4,7 @@ import { AlertaLead, MetricasRadar, Lead } from '@radar/shared';
 import { CardAlerta, TipoAcaoRapida } from '../components/CardAlerta.js';
 import { ModalAcao } from '../components/ModalAcao.js';
 import { ModalNovoLead } from '../components/ModalNovoLead.js';
+import { ModalEditarLead } from '../components/ModalEditarLead.js';
 import { FeedbackAcaoRapida } from '../components/FeedbackAcaoRapida.js';
 import { LoadingState, EmptyState, ErrorState } from '../components/FeedbackStates.js';
 import { formatarMoeda } from '../utils/formatters.js';
@@ -78,6 +79,7 @@ export const RadarPage: React.FC<RadarPageProps> = ({ onAtualizarAlertasTotal })
 
   // Controle de Modais
   const [modalNovoAberto, setModalNovoAberto] = useState(false);
+  const [leadParaEditar, setLeadParaEditar] = useState<Lead | null>(null);
   const [modalAcao, setModalAcao] = useState<{
     aberto: boolean;
     tipo: 'perdeu' | 'nota';
@@ -89,6 +91,26 @@ export const RadarPage: React.FC<RadarPageProps> = ({ onAtualizarAlertasTotal })
     leadId: 0,
     leadNome: ''
   });
+
+  const handleEditarLead = async (leadId: number) => {
+    try {
+      const leadCompleto = await apiFetch<Lead>(`/leads/${leadId}`);
+      setLeadParaEditar(leadCompleto);
+    } catch (err: any) {
+      alert(`Erro ao carregar dados do lead: ${err.message || 'Falha ao buscar dados'}`);
+    }
+  };
+
+  const handleExcluirLead = async (leadId: number, leadNome: string) => {
+    if (confirm(`Tem certeza que deseja excluir o lead "${leadNome}" e todo o histórico?`)) {
+      try {
+        await apiFetch(`/leads/${leadId}`, { method: 'DELETE' });
+        await carregarDados();
+      } catch (err: any) {
+        alert(`Erro ao excluir: ${err.message || 'Falha na exclusão'}`);
+      }
+    }
+  };
 
   const carregarDados = async (silencioso = false): Promise<boolean> => {
     try {
@@ -287,6 +309,8 @@ export const RadarPage: React.FC<RadarPageProps> = ({ onAtualizarAlertasTotal })
               tipoAcaoEmAndamento={acaoEmAndamento?.leadId === alerta.lead_id
                 ? acaoEmAndamento.tipoAcao
                 : null}
+              onEditar={handleEditarLead}
+              onExcluir={handleExcluirLead}
             />
           ))}
         </div>
@@ -355,6 +379,13 @@ export const RadarPage: React.FC<RadarPageProps> = ({ onAtualizarAlertasTotal })
         aberto={modalNovoAberto}
         onFechar={() => setModalNovoAberto(false)}
         onCriado={handleLeadCriado}
+      />
+
+      <ModalEditarLead
+        aberto={leadParaEditar !== null}
+        lead={leadParaEditar}
+        onFechar={() => setLeadParaEditar(null)}
+        onAtualizado={() => carregarDados()}
       />
 
       <ModalAcao

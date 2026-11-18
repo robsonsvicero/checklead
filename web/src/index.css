@@ -641,13 +641,16 @@ button, input, select, textarea {
   box-shadow: var(--shadow-card);
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
+  z-index: 1;
 }
 
 .alerta-card:has(.acoes-secundarias[open]),
 .lead-card:has(.acoes-secundarias[open]),
+.alerta-card.menu-aberto,
+.lead-card.menu-aberto,
 .alerta-card:focus-within,
 .lead-card:focus-within {
-  z-index: 50;
+  z-index: 60;
 }
 
 .alerta-card::before {
@@ -673,6 +676,7 @@ button, input, select, textarea {
 .alerta-card:hover {
   border-color: rgba(245, 158, 11, 0.55);
   transform: translateY(-2px);
+  z-index: 2;
 }
 
 [data-theme="light"] .alerta-card:hover {
@@ -778,11 +782,14 @@ button, input, select, textarea {
   margin-bottom: 14px;
   box-shadow: var(--shadow-card);
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  z-index: 1;
 }
 
 .lead-card:hover {
   border-color: var(--border-hover);
   transform: translateY(-2px);
+  z-index: 2;
 }
 
 [data-theme="dark"] .lead-card:hover {
@@ -979,7 +986,7 @@ button, input, select, textarea {
 }
 
 .acoes-secundarias[open] {
-  z-index: 60;
+  z-index: 70;
 }
 
 .acoes-secundarias > summary {
