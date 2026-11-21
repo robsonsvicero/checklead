@@ -1,0 +1,22 @@
+{
+  "name": "Radar de Leads",
+  "short_name": "Radar",
+  "description": "Detector de vazamento de vendas para autônomos e MEIs",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#070a14",
+  "theme_color": "#070a14",
+  "icons": [
+    {
+      "src": "/icone_app.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
