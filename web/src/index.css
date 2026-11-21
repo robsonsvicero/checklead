@@ -226,6 +226,7 @@ body {
   min-height: 100vh;
   min-height: 100dvh;
   padding-bottom: calc(84px + env(safe-area-inset-bottom));
+  overflow-x: hidden;
 }
 
 @media (min-width: 768px) {
@@ -241,6 +242,19 @@ a {
 
 button, input, select, textarea {
   font: inherit;
+}
+
+input {
+  font-size: 16px;
+  transform: scale(0.875); /* Simula 14px visualmente */
+  transform-origin: left top;
+}
+
+input[type="checkbox"],
+input[type="radio"],
+input[type="file"] {
+  transform: none;
+  font-size: inherit;
 }
 
 ::selection {
@@ -1155,6 +1169,7 @@ button, input, select, textarea {
    ========================================================================== */
 .form-group {
   margin-bottom: 16px;
+  overflow-x: clip;
 }
 
 .form-label {
@@ -1167,16 +1182,19 @@ button, input, select, textarea {
 }
 
 .form-input, .form-select, .form-textarea {
-  width: 100%;
+  width: calc(100% / 0.875);
+  max-width: calc(100% / 0.875);
   padding: 10px 14px;
   border: 1px solid var(--border-standard);
   border-radius: var(--radius-lg);
   color: var(--text-primary);
   background: var(--surface-container);
   font-family: var(--font-sans);
-  font-size: 14px;
+  font-size: 16px;
+  transform: scale(0.875);
+  transform-origin: left top;
   outline: none;
-  min-height: 42px;
+  min-height: 48px;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -1385,8 +1403,8 @@ button, input, select, textarea {
   .header-actions > button { min-width: 44px; min-height: 44px; }
   .desktop-nav a { min-height: 44px; display: inline-flex; align-items: center; }
   .nav-item { min-height: 44px; }
-  .form-input, .form-select, .form-textarea, .btn-close { min-height: 44px; }
-  .btn-close { min-width: 44px; display: grid; place-items: center; }
+  .form-input, .form-select, .form-textarea { min-height: calc(44px / 0.875); }
+  .btn-close { min-height: 44px; min-width: 44px; display: grid; place-items: center; }
   .alerta-contato-link { min-height: 44px; padding: 8px 12px; font-size: 13.5px; }
 }
 
@@ -1432,12 +1450,20 @@ button, input, select, textarea {
 .leads-filter-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .leads-filter-field { display: flex; min-width: 0; flex-direction: column; gap: 4px; }
 .leads-filter-label { color: var(--text-subtle); font-family: var(--font-mono); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
-.leads-filter-select { min-width: 0; min-height: 42px; padding: 8px 12px; font-size: 13.5px; }
+.leads-filter-select {
+  min-width: 0;
+  min-height: 48px;
+  padding: 8px 12px;
+  font-size: 16px;
+  transform: scale(0.875);
+  transform-origin: left top;
+  width: calc(100% / 0.875);
+}
 
 @media (max-width: 767px) {
   .leads-filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .leads-filter-field:last-child { grid-column: 1 / -1; }
-  .leads-filter-select { min-height: 44px; }
+  .leads-filter-select { min-height: calc(44px / 0.875); }
 }
 
 @media (max-width: 520px) {
