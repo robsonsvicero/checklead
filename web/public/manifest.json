@@ -1,5 +1,5 @@
 {
-  "name": "Radar de Leads",
+  "name": "CheckLeads",
   "short_name": "Radar",
   "description": "Detector de vazamento de vendas para autônomos e MEIs",
   "start_url": "/",

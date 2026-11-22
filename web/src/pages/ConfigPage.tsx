@@ -555,7 +555,7 @@ export const ConfigPage: React.FC = () => {
             <p style={{ fontSize: '13px', color: 'var(--muted-foreground)', marginBottom: '18px' }}>
               {provider === 'supabase'
                 ? 'Altere a senha da sua conta.'
-                : 'Altere a senha de acesso ao seu Radar de Leads.'}
+                : 'Altere a senha de acesso ao seu CheckLeads.'}
             </p>
 
             {erroSenha && (

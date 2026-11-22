@@ -126,7 +126,7 @@ export const SetupPage: React.FC = () => {
             style={{ width: '100%', marginTop: '12px', padding: '12px', fontSize: '15px' }}
             disabled={salvando}
           >
-            {salvando ? 'Configurando...' : 'Ativar Meu Radar de Leads'}
+            {salvando ? 'Configurando...' : 'Ativar Meu CheckLeads'}
           </button>
         </form>
       </div>

@@ -72,7 +72,7 @@ async function startServer(): Promise<void> {
   }
 
   app.listen(PORT, HOST, () => {
-    console.log(`📡 Radar de Leads (Backend) rodando em http://${HOST}:${PORT}`);
+    console.log(`📡 CheckLeads (Backend) rodando em http://${HOST}:${PORT}`);
     console.log(`💡 Para acessar via celular na mesma rede, use o IP local da máquina na porta ${PORT}`);
   });
 }
