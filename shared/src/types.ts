@@ -34,6 +34,22 @@ export interface Interacao {
   criado_em: string; // ISO string
 }
 
+export type LeadAbordagemStatus = 'rascunho' | 'enviada' | 'concluida';
+export type LeadAbordagemCanal = 'whatsapp' | 'email' | 'telefone' | 'instagram' | 'outro';
+
+export interface LeadAbordagem {
+  id: number;
+  lead_id: number;
+  numero: number;
+  titulo: string;
+  canal: LeadAbordagemCanal | null;
+  mensagem: string;
+  resultado: string;
+  status: LeadAbordagemStatus;
+  criado_em: string;
+  atualizado_em: string;
+}
+
 export interface LeadComInteracoes extends Lead {
   interacoes: Interacao[];
 }
@@ -105,4 +121,5 @@ export interface ExportData {
   configuracao: Configuracao;
   leads: Lead[];
   interacoes: Interacao[];
+  abordagens?: LeadAbordagem[];
 }

@@ -4,7 +4,9 @@ import { getAuthenticatedUser, requireAuth } from '../middlewares/auth.js';
 import {
   CriarLeadSchema,
   AtualizarLeadSchema,
-  AcaoLeadSchema
+  AcaoLeadSchema,
+  CriarLeadAbordagemSchema,
+  AtualizarLeadAbordagemSchema
 } from '@radar/shared';
 import {
   listarLeads,
@@ -12,7 +14,10 @@ import {
   criarLead,
   atualizarLead,
   executarAcaoLead,
-  excluirLead
+  excluirLead,
+  listarAbordagensLead,
+  criarAbordagemLead,
+  atualizarAbordagemLead
 } from '../services/leadService.js';
 
 export const leadRouter = Router();
@@ -48,6 +53,48 @@ leadRouter.get('/:id', asyncHandler(async (req, res) => {
     return;
   }
   res.json(lead);
+}));
+
+leadRouter.get('/:id/abordagens', asyncHandler(async (req, res, next) => {
+  const id = Number(req.params.id);
+  try {
+    res.json(await listarAbordagensLead(id, getAuthenticatedUser(req).id));
+  } catch (err: any) {
+    if (err.message === 'Lead não encontrado') {
+      res.status(404).json({ error: err.message });
+      return;
+    }
+    next(err);
+  }
+}));
+
+leadRouter.post('/:id/abordagens', asyncHandler(async (req, res, next) => {
+  const id = Number(req.params.id);
+  const body = CriarLeadAbordagemSchema.parse(req.body);
+  try {
+    res.status(201).json(await criarAbordagemLead(id, body, getAuthenticatedUser(req).id));
+  } catch (err: any) {
+    if (err.message === 'Lead não encontrado') {
+      res.status(404).json({ error: err.message });
+      return;
+    }
+    next(err);
+  }
+}));
+
+leadRouter.patch('/:id/abordagens/:abordagemId', asyncHandler(async (req, res, next) => {
+  const id = Number(req.params.id);
+  const abordagemId = Number(req.params.abordagemId);
+  const body = AtualizarLeadAbordagemSchema.parse(req.body);
+  try {
+    res.json(await atualizarAbordagemLead(id, abordagemId, body, getAuthenticatedUser(req).id));
+  } catch (err: any) {
+    if (err.message === 'Lead não encontrado' || err.message === 'Abordagem não encontrada') {
+      res.status(404).json({ error: err.message });
+      return;
+    }
+    next(err);
+  }
 }));
 
 leadRouter.patch('/:id', asyncHandler(async (req, res, next) => {

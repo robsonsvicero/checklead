@@ -53,7 +53,34 @@ export function runMigrations(db: DatabaseSync) {
 
     CREATE INDEX IF NOT EXISTS idx_interacoes_lead_id ON interacoes(lead_id);
     CREATE INDEX IF NOT EXISTS idx_interacoes_criado_em ON interacoes(criado_em);
+
+    CREATE TABLE IF NOT EXISTS lead_abordagens (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      lead_id INTEGER NOT NULL,
+      numero INTEGER NOT NULL,
+      titulo TEXT NOT NULL,
+      canal TEXT,
+      mensagem TEXT NOT NULL DEFAULT '',
+      resultado TEXT NOT NULL DEFAULT '',
+      status TEXT NOT NULL DEFAULT 'rascunho',
+      criado_em TEXT NOT NULL,
+      atualizado_em TEXT NOT NULL,
+      UNIQUE (lead_id, numero),
+      FOREIGN KEY (lead_id) REFERENCES leads(id) ON DELETE CASCADE
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_lead_abordagens_lead_id_numero
+      ON lead_abordagens(lead_id, numero);
   `);
+
+  const agora = new Date().toISOString();
+  db.prepare(`
+    INSERT OR IGNORE INTO lead_abordagens (
+      lead_id, numero, titulo, canal, mensagem, resultado, status, criado_em, atualizado_em
+    )
+    SELECT id, 0, 'Descobrir quem é o decisor', NULL, '', '', 'rascunho', ?, ?
+    FROM leads
+  `).run(agora, agora);
 
   // Migração transparente para bases existentes
   const colunas = db.prepare('PRAGMA table_info(leads)').all() as Array<{ name: string }>;

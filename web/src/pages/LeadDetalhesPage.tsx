@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { apiFetch } from '../api/client.js';
-import { LeadComInteracoes } from '@radar/shared';
+import { LeadAbordagem, LeadComInteracoes } from '@radar/shared';
 import { formatarMoeda, formatarDataHora, formatarStatusLead, gerarLinkContato } from '../utils/formatters.js';
 import { gerarLinksSociaisLead } from '../utils/socialLinks.js';
 import { LoadingState, ErrorState } from '../components/FeedbackStates.js';
@@ -16,8 +16,12 @@ export const LeadDetalhesPage: React.FC = () => {
   const navigate = useNavigate();
 
   const [lead, setLead] = useState<LeadComInteracoes | null>(null);
+  const [abordagens, setAbordagens] = useState<LeadAbordagem[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
+  const [abordagemEmSalvamento, setAbordagemEmSalvamento] = useState<number | null>(null);
+  const [adicionandoAbordagem, setAdicionandoAbordagem] = useState(false);
+  const [feedbackAbordagem, setFeedbackAbordagem] = useState<{ id: number | 'nova'; tipo: 'sucesso' | 'erro'; mensagem: string } | null>(null);
   const [modalEditarAberto, setModalEditarAberto] = useState(false);
   const [acaoEmAndamento, setAcaoEmAndamento] = useState<TipoAcaoRapida | null>(null);
   const [feedbackAcao, setFeedbackAcao] = useState<{ tipo: 'sucesso' | 'erro' | 'aviso'; mensagem: string } | null>(null);
@@ -38,8 +42,12 @@ export const LeadDetalhesPage: React.FC = () => {
         setCarregando(true);
         setErro(null);
       }
-      const data = await apiFetch<LeadComInteracoes>(`/leads/${id}`);
+      const [data, abordagensData] = await Promise.all([
+        apiFetch<LeadComInteracoes>(`/leads/${id}`),
+        apiFetch<LeadAbordagem[]>(`/leads/${id}/abordagens`)
+      ]);
       setLead(data);
+      setAbordagens(abordagensData);
       return true;
     } catch (err: any) {
       if (!silencioso) {
@@ -95,6 +103,72 @@ export const LeadDetalhesPage: React.FC = () => {
   const handleAtualizarAposAcao = async () => {
     if (await carregarLead(true)) {
       setFeedbackAcao(null);
+    }
+  };
+
+  const atualizarRascunhoAbordagem = (id: number, alteracoes: Partial<LeadAbordagem>) => {
+    setAbordagens(prev => prev.map(item => item.id === id ? { ...item, ...alteracoes } : item));
+    if (feedbackAbordagem?.id === id) {
+      setFeedbackAbordagem(null);
+    }
+  };
+
+  const salvarAbordagem = async (abordagem: LeadAbordagem) => {
+    if (!lead || abordagemEmSalvamento !== null) return;
+    setAbordagemEmSalvamento(abordagem.id);
+    setFeedbackAbordagem(null);
+
+    try {
+      const atualizada = await apiFetch<LeadAbordagem>(`/leads/${lead.id}/abordagens/${abordagem.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          titulo: abordagem.titulo,
+          canal: abordagem.canal,
+          mensagem: abordagem.mensagem,
+          resultado: abordagem.resultado,
+          status: abordagem.status
+        })
+      });
+      setAbordagens(prev => prev.map(item => item.id === atualizada.id ? atualizada : item));
+      setFeedbackAbordagem({ id: abordagem.id, tipo: 'sucesso', mensagem: 'Abordagem salva.' });
+    } catch (err: any) {
+      setFeedbackAbordagem({
+        id: abordagem.id,
+        tipo: 'erro',
+        mensagem: err.message || 'Não foi possível salvar a abordagem. Tente novamente.'
+      });
+    } finally {
+      setAbordagemEmSalvamento(null);
+    }
+  };
+
+  const adicionarAbordagem = async () => {
+    if (!lead || adicionandoAbordagem) return;
+    setAdicionandoAbordagem(true);
+    setFeedbackAbordagem(null);
+
+    try {
+      const numero = abordagens.length;
+      const novaAbordagem = await apiFetch<LeadAbordagem>(`/leads/${lead.id}/abordagens`, {
+        method: 'POST',
+        body: JSON.stringify({
+          titulo: `Abordagem ${numero}`,
+          canal: null,
+          mensagem: '',
+          resultado: '',
+          status: 'rascunho'
+        })
+      });
+      setAbordagens(prev => [...prev, novaAbordagem].sort((a, b) => a.numero - b.numero));
+      setFeedbackAbordagem({ id: novaAbordagem.id, tipo: 'sucesso', mensagem: 'Nova abordagem adicionada.' });
+    } catch (err: any) {
+      setFeedbackAbordagem({
+        id: 'nova',
+        tipo: 'erro',
+        mensagem: err.message || 'Não foi possível adicionar a abordagem. Tente novamente.'
+      });
+    } finally {
+      setAdicionandoAbordagem(false);
     }
   };
 
@@ -322,6 +396,140 @@ export const LeadDetalhesPage: React.FC = () => {
           </button>
         </div>
       </div>
+
+      <section className="lead-approaches" aria-labelledby="lead-approaches-title">
+        <div className="lead-approaches-heading">
+          <div>
+            <h2 id="lead-approaches-title">Abordagens</h2>
+            <p>Prepare cada contato e registre o retorno do lead.</p>
+          </div>
+          <button
+            type="button"
+            className="btn-acao"
+            onClick={adicionarAbordagem}
+            disabled={adicionandoAbordagem}
+          >
+            {adicionandoAbordagem ? 'Adicionando...' : '+ Adicionar abordagem'}
+          </button>
+        </div>
+
+        <div className="lead-approach-list">
+          {abordagens.map(abordagem => {
+            const salvando = abordagemEmSalvamento === abordagem.id;
+            const feedback = feedbackAbordagem?.id === abordagem.id ? feedbackAbordagem : null;
+
+            return (
+              <article className="lead-approach" key={abordagem.id}>
+                <div className="lead-approach-header">
+                  <span className="lead-approach-number">Abordagem {abordagem.numero}</span>
+                  <span className={`lead-approach-status lead-approach-status-${abordagem.status}`}>
+                    {abordagem.status === 'concluida' ? 'Concluída' : abordagem.status === 'enviada' ? 'Enviada' : 'Rascunho'}
+                  </span>
+                </div>
+
+                <div className="lead-approach-fields">
+                  <div className="form-group">
+                    <label className="form-label" htmlFor={`abordagem-titulo-${abordagem.id}`}>Objetivo da abordagem</label>
+                    <input
+                      id={`abordagem-titulo-${abordagem.id}`}
+                      className="form-input"
+                      value={abordagem.titulo}
+                      maxLength={100}
+                      disabled={salvando}
+                      onChange={event => atualizarRascunhoAbordagem(abordagem.id, { titulo: event.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label" htmlFor={`abordagem-canal-${abordagem.id}`}>Canal</label>
+                    <select
+                      id={`abordagem-canal-${abordagem.id}`}
+                      className="form-select"
+                      value={abordagem.canal || ''}
+                      disabled={salvando}
+                      onChange={event => atualizarRascunhoAbordagem(abordagem.id, {
+                        canal: (event.target.value || null) as LeadAbordagem['canal']
+                      })}
+                    >
+                      <option value="">Não definido</option>
+                      <option value="whatsapp">WhatsApp</option>
+                      <option value="email">E-mail</option>
+                      <option value="telefone">Ligação</option>
+                      <option value="instagram">Instagram</option>
+                      <option value="outro">Outro</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group lead-approach-message">
+                    <label className="form-label" htmlFor={`abordagem-mensagem-${abordagem.id}`}>Texto da abordagem</label>
+                    <textarea
+                      id={`abordagem-mensagem-${abordagem.id}`}
+                      className="form-textarea"
+                      rows={4}
+                      maxLength={5000}
+                      placeholder="Escreva aqui o texto que você pretende enviar."
+                      value={abordagem.mensagem}
+                      disabled={salvando}
+                      onChange={event => atualizarRascunhoAbordagem(abordagem.id, { mensagem: event.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group lead-approach-result">
+                    <label className="form-label" htmlFor={`abordagem-resultado-${abordagem.id}`}>Retorno / observações</label>
+                    <textarea
+                      id={`abordagem-resultado-${abordagem.id}`}
+                      className="form-textarea"
+                      rows={3}
+                      maxLength={2000}
+                      placeholder="Registre quem decide, o que respondeu ou o próximo passo."
+                      value={abordagem.resultado}
+                      disabled={salvando}
+                      onChange={event => atualizarRascunhoAbordagem(abordagem.id, { resultado: event.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label" htmlFor={`abordagem-status-${abordagem.id}`}>Status</label>
+                    <select
+                      id={`abordagem-status-${abordagem.id}`}
+                      className="form-select"
+                      value={abordagem.status}
+                      disabled={salvando}
+                      onChange={event => atualizarRascunhoAbordagem(abordagem.id, {
+                        status: event.target.value as LeadAbordagem['status']
+                      })}
+                    >
+                      <option value="rascunho">Rascunho</option>
+                      <option value="enviada">Enviada</option>
+                      <option value="concluida">Concluída</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="lead-approach-footer">
+                  {feedback && (
+                    <p className={`lead-approach-feedback ${feedback.tipo}`} role="status">
+                      {feedback.mensagem}
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    className="btn-acao primary"
+                    onClick={() => salvarAbordagem(abordagem)}
+                    disabled={salvando || abordagemEmSalvamento !== null}
+                  >
+                    {salvando ? 'Salvando...' : 'Salvar abordagem'}
+                  </button>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+
+        {feedbackAbordagem?.id === 'nova' && (
+          <p className="lead-approach-feedback erro" role="status">{feedbackAbordagem.mensagem}</p>
+        )}
+      </section>
 
       {/* Linha do Tempo de Interações */}
       <div>

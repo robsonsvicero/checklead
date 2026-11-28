@@ -3,6 +3,9 @@ import {
   Lead,
   Interacao,
   LeadComInteracoes,
+  LeadAbordagem,
+  CriarLeadAbordagemDTO,
+  AtualizarLeadAbordagemDTO,
   CriarLeadDTO,
   AtualizarLeadDTO,
   AcaoLeadDTO
@@ -460,6 +463,171 @@ export async function executarAcaoLead(id: number, acao: AcaoLeadDTO, userId: st
   return leadAtualizado;
 }
 
+export async function listarAbordagensLead(leadId: number, userId: string): Promise<LeadAbordagem[]> {
+  if (getDatabaseProvider() === 'supabase') {
+    const client = getSupabaseClient();
+    const { data: lead, error: leadError } = await client
+      .from('leads')
+      .select('id')
+      .eq('id', leadId)
+      .eq('user_id', userId)
+      .maybeSingle();
+    throwSupabaseError(leadError);
+    if (!lead) throw new Error('Lead não encontrado');
+
+    const agora = new Date().toISOString();
+    const { error: defaultError } = await client.from('lead_abordagens').upsert({
+      user_id: userId,
+      lead_id: leadId,
+      numero: 0,
+      titulo: 'Descobrir quem é o decisor',
+      canal: null,
+      mensagem: '',
+      resultado: '',
+      status: 'rascunho',
+      criado_em: agora,
+      atualizado_em: agora
+    }, { onConflict: 'lead_id,numero', ignoreDuplicates: true });
+    throwSupabaseError(defaultError);
+
+    const { data, error } = await client
+      .from('lead_abordagens')
+      .select('*')
+      .eq('lead_id', leadId)
+      .eq('user_id', userId)
+      .order('numero', { ascending: true });
+    throwSupabaseError(error);
+    return (data || []).map((abordagem: LeadAbordagem) => normalizarLeadAbordagem(abordagem));
+  }
+
+  const db = getDb();
+  const lead = db.prepare('SELECT id FROM leads WHERE id = ?').get(leadId);
+  if (!lead) throw new Error('Lead não encontrado');
+
+  const agora = new Date().toISOString();
+  db.prepare(`
+    INSERT OR IGNORE INTO lead_abordagens (
+      lead_id, numero, titulo, canal, mensagem, resultado, status, criado_em, atualizado_em
+    ) VALUES (?, 0, 'Descobrir quem é o decisor', NULL, '', '', 'rascunho', ?, ?)
+  `).run(leadId, agora, agora);
+
+  return db.prepare('SELECT * FROM lead_abordagens WHERE lead_id = ? ORDER BY numero ASC')
+    .all(leadId) as unknown as LeadAbordagem[];
+}
+
+export async function criarAbordagemLead(
+  leadId: number,
+  dados: CriarLeadAbordagemDTO,
+  userId: string
+): Promise<LeadAbordagem> {
+  await listarAbordagensLead(leadId, userId);
+  const agora = new Date().toISOString();
+
+  if (getDatabaseProvider() === 'supabase') {
+    const client = getSupabaseClient();
+    const { data: ultima, error: ultimaError } = await client
+      .from('lead_abordagens')
+      .select('numero')
+      .eq('lead_id', leadId)
+      .eq('user_id', userId)
+      .order('numero', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    throwSupabaseError(ultimaError);
+
+    const { data, error } = await client
+      .from('lead_abordagens')
+      .insert({
+        ...dados,
+        user_id: userId,
+        lead_id: leadId,
+        numero: Number(ultima?.numero ?? -1) + 1,
+        criado_em: agora,
+        atualizado_em: agora
+      })
+      .select('*')
+      .single();
+    throwSupabaseError(error);
+    return normalizarLeadAbordagem(data as LeadAbordagem);
+  }
+
+  const db = getDb();
+  const ultima = db.prepare('SELECT MAX(numero) AS numero FROM lead_abordagens WHERE lead_id = ?')
+    .get(leadId) as { numero: number | null };
+  const res = db.prepare(`
+    INSERT INTO lead_abordagens (
+      lead_id, numero, titulo, canal, mensagem, resultado, status, criado_em, atualizado_em
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    leadId,
+    Number(ultima.numero ?? -1) + 1,
+    dados.titulo,
+    dados.canal,
+    dados.mensagem,
+    dados.resultado,
+    dados.status,
+    agora,
+    agora
+  );
+  return db.prepare('SELECT * FROM lead_abordagens WHERE id = ?').get(Number(res.lastInsertRowid)) as unknown as LeadAbordagem;
+}
+
+export async function atualizarAbordagemLead(
+  leadId: number,
+  abordagemId: number,
+  dados: AtualizarLeadAbordagemDTO,
+  userId: string
+): Promise<LeadAbordagem> {
+  await garantirLeadDoUsuario(leadId, userId);
+  const atualizacoes = { ...dados, atualizado_em: new Date().toISOString() };
+
+  if (getDatabaseProvider() === 'supabase') {
+    const { data, error } = await getSupabaseClient()
+      .from('lead_abordagens')
+      .update(atualizacoes)
+      .eq('id', abordagemId)
+      .eq('lead_id', leadId)
+      .eq('user_id', userId)
+      .select('*')
+      .maybeSingle();
+    throwSupabaseError(error);
+    if (!data) throw new Error('Abordagem não encontrada');
+    return normalizarLeadAbordagem(data as LeadAbordagem);
+  }
+
+  const db = getDb();
+  const abordagemAtual = db.prepare('SELECT id FROM lead_abordagens WHERE id = ? AND lead_id = ?')
+    .get(abordagemId, leadId);
+  if (!abordagemAtual) throw new Error('Abordagem não encontrada');
+
+  const updates: string[] = [];
+  const params: (string | number | null)[] = [];
+  for (const [campo, valor] of Object.entries(atualizacoes)) {
+    updates.push(`${campo} = ?`);
+    params.push(valor as string | number | null);
+  }
+  params.push(abordagemId, leadId);
+  db.prepare(`UPDATE lead_abordagens SET ${updates.join(', ')} WHERE id = ? AND lead_id = ?`).run(...params);
+  return db.prepare('SELECT * FROM lead_abordagens WHERE id = ?').get(abordagemId) as unknown as LeadAbordagem;
+}
+
+async function garantirLeadDoUsuario(leadId: number, userId: string): Promise<void> {
+  if (getDatabaseProvider() === 'supabase') {
+    const { data, error } = await getSupabaseClient()
+      .from('leads')
+      .select('id')
+      .eq('id', leadId)
+      .eq('user_id', userId)
+      .maybeSingle();
+    throwSupabaseError(error);
+    if (!data) throw new Error('Lead não encontrado');
+    return;
+  }
+
+  const lead = getDb().prepare('SELECT id FROM leads WHERE id = ?').get(leadId);
+  if (!lead) throw new Error('Lead não encontrado');
+}
+
 export async function excluirLead(id: number, userId: string): Promise<boolean> {
   if (getDatabaseProvider() === 'supabase') {
     const { data, error } = await getSupabaseClient()
@@ -492,6 +660,16 @@ function normalizarInteracao(interacao: Interacao & { user_id?: string }): Inter
     ...dadosInteracao,
     id: Number(interacao.id),
     lead_id: Number(interacao.lead_id)
+  };
+}
+
+function normalizarLeadAbordagem(abordagem: LeadAbordagem & { user_id?: string }): LeadAbordagem {
+  const { user_id: _userId, ...dadosAbordagem } = abordagem;
+  return {
+    ...dadosAbordagem,
+    id: Number(abordagem.id),
+    lead_id: Number(abordagem.lead_id),
+    numero: Number(abordagem.numero)
   };
 }
 

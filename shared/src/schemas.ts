@@ -113,6 +113,23 @@ export const AcaoLeadSchema = z.discriminatedUnion('tipo', [
 
 export type AcaoLeadDTO = z.infer<typeof AcaoLeadSchema>;
 
+export const LeadAbordagemStatusEnum = z.enum(['rascunho', 'enviada', 'concluida']);
+export const LeadAbordagemCanalEnum = z.enum(['whatsapp', 'email', 'telefone', 'instagram', 'outro']);
+
+export const CriarLeadAbordagemSchema = z.object({
+  titulo: z.string().trim().min(2, 'Informe um título para a abordagem').max(100),
+  canal: LeadAbordagemCanalEnum.nullable().default(null),
+  mensagem: z.string().max(5000).default(''),
+  resultado: z.string().max(2000).default(''),
+  status: LeadAbordagemStatusEnum.default('rascunho')
+});
+
+export const AtualizarLeadAbordagemSchema = CriarLeadAbordagemSchema.partial()
+  .refine(data => Object.keys(data).length > 0, 'Informe ao menos um campo para atualizar');
+
+export type CriarLeadAbordagemDTO = z.infer<typeof CriarLeadAbordagemSchema>;
+export type AtualizarLeadAbordagemDTO = z.infer<typeof AtualizarLeadAbordagemSchema>;
+
 export const ConfiguracaoSchema = z.object({
   limite_sem_resposta_horas: z.number().int().min(1, 'Deve ser no mínimo 1 hora').max(720),
   limite_follow_up_dias: z.number().int().min(1, 'Deve ser no mínimo 1 dia').max(90),

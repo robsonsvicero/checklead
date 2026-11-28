@@ -1,6 +1,6 @@
 import { getDb } from '../db/connection.js';
 import { obterConfiguracao } from './configService.js';
-import { Lead, Interacao, ExportData } from '@radar/shared';
+import { Lead, Interacao, LeadAbordagem, ExportData } from '@radar/shared';
 import { getDatabaseProvider, getSupabaseClient, throwSupabaseError } from '../db/supabase.js';
 import { listarInteracoes, listarLeads } from './leadService.js';
 
@@ -264,19 +264,36 @@ export async function gerarExportacaoJson(userId: string): Promise<ExportData> {
   let configuracao: Awaited<ReturnType<typeof obterConfiguracao>>;
   let leads: Lead[];
   let interacoes: Interacao[];
+  let abordagens: LeadAbordagem[];
 
   if (getDatabaseProvider() === 'supabase') {
-    [configuracao, leads, interacoes] = await Promise.all([
+    const client = getSupabaseClient();
+    const [{ data, error }, configuracaoData, leadsData, interacoesData] = await Promise.all([
+      client.from('lead_abordagens').select('*').eq('user_id', userId).order('lead_id').order('numero'),
       obterConfiguracao(userId),
       listarLeads({ ordenarPor: 'data', ordem: 'asc' }, userId),
       listarInteracoes(userId)
     ]);
+    throwSupabaseError(error);
+    abordagens = (data || []).map((item: LeadAbordagem & { user_id?: string }) => {
+      const { user_id: _userId, ...abordagem } = item;
+      return {
+        ...abordagem,
+        id: Number(item.id),
+        lead_id: Number(item.lead_id),
+        numero: Number(item.numero)
+      };
+    });
+    configuracao = configuracaoData;
+    leads = leadsData;
+    interacoes = interacoesData;
   } else {
     const db = getDb();
-    [configuracao, leads, interacoes] = await Promise.all([
+    [configuracao, leads, interacoes, abordagens] = await Promise.all([
       obterConfiguracao(userId),
       Promise.resolve(db.prepare('SELECT * FROM leads ORDER BY id ASC').all() as unknown as Lead[]),
-      Promise.resolve(db.prepare('SELECT * FROM interacoes ORDER BY id ASC').all() as unknown as Interacao[])
+      Promise.resolve(db.prepare('SELECT * FROM interacoes ORDER BY id ASC').all() as unknown as Interacao[]),
+      Promise.resolve(db.prepare('SELECT * FROM lead_abordagens ORDER BY lead_id, numero').all() as unknown as LeadAbordagem[])
     ]);
   }
 
@@ -285,7 +302,8 @@ export async function gerarExportacaoJson(userId: string): Promise<ExportData> {
     gerado_em: new Date().toISOString(),
     configuracao,
     leads,
-    interacoes
+    interacoes,
+    abordagens
   };
 }
 
@@ -355,7 +373,7 @@ function escapeCsv(valor: string | number): string {
   return str;
 }
 
-export async function importarBackupJson(conteudo: unknown, userId: string): Promise<{ totalLeads: number; totalInteracoes: number }> {
+export async function importarBackupJson(conteudo: unknown, userId: string): Promise<{ totalLeads: number; totalInteracoes: number; totalAbordagens: number }> {
   if (typeof conteudo !== 'object' || conteudo === null) {
     throw new Error('Formato de JSON inválido');
   }
@@ -372,7 +390,7 @@ export async function importarBackupJson(conteudo: unknown, userId: string): Pro
     });
     throwSupabaseError(error);
     if (!resultado) throw new Error('O Supabase não retornou o resultado da restauração.');
-    return resultado as { totalLeads: number; totalInteracoes: number };
+    return resultado as { totalLeads: number; totalInteracoes: number; totalAbordagens: number };
   }
 
   const db = getDb();
@@ -382,6 +400,7 @@ export async function importarBackupJson(conteudo: unknown, userId: string): Pro
   try {
     // Limpa dados anteriores
     db.exec('DELETE FROM interacoes;');
+    db.exec('DELETE FROM lead_abordagens;');
     db.exec('DELETE FROM leads;');
 
     // Restaura configurações se existirem
@@ -447,10 +466,45 @@ export async function importarBackupJson(conteudo: unknown, userId: string): Pro
       }
     }
 
+    let totalAbordagens = 0;
+    if (Array.isArray(data.abordagens)) {
+      const stmtAbordagem = db.prepare(`
+        INSERT INTO lead_abordagens (
+          id, lead_id, numero, titulo, canal, mensagem, resultado, status, criado_em, atualizado_em
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+
+      for (const abordagem of data.abordagens) {
+        stmtAbordagem.run(
+          abordagem.id,
+          abordagem.lead_id,
+          abordagem.numero,
+          abordagem.titulo,
+          abordagem.canal || null,
+          abordagem.mensagem,
+          abordagem.resultado,
+          abordagem.status,
+          abordagem.criado_em,
+          abordagem.atualizado_em
+        );
+        totalAbordagens++;
+      }
+    } else {
+      const agora = new Date().toISOString();
+      db.prepare(`
+        INSERT INTO lead_abordagens (
+          lead_id, numero, titulo, canal, mensagem, resultado, status, criado_em, atualizado_em
+        )
+        SELECT id, 0, 'Descobrir quem é o decisor', NULL, '', '', 'rascunho', ?, ?
+        FROM leads
+      `).run(agora, agora);
+    }
+
     db.exec('COMMIT;');
     return {
       totalLeads: data.leads.length,
-      totalInteracoes
+      totalInteracoes,
+      totalAbordagens
     };
   } catch (err) {
     db.exec('ROLLBACK;');

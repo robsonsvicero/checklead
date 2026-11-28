@@ -58,7 +58,7 @@ backupRouter.post('/import/json', asyncHandler(async (req, res) => {
     const resultado = await importarBackupJson(req.body, getAuthenticatedUser(req).id);
     res.json({
       ok: true,
-      message: `Backup restaurado com sucesso! ${resultado.totalLeads} leads e ${resultado.totalInteracoes} interações importadas.`,
+      message: `Backup restaurado com sucesso! ${resultado.totalLeads} leads, ${resultado.totalInteracoes} interações e ${resultado.totalAbordagens} abordagens importadas.`,
       ...resultado
     });
   } catch (err: any) {
